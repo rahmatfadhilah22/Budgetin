@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -204,10 +206,31 @@ func main() {
 		json.NewEncoder(w).Encode(list)
 	})
 
+	// Static File Server for React SPA
+	fs := http.FileServer(http.Dir("./dist"))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Return 404 for unknown /api/* endpoints
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+
+		// Check if the requested file exists in ./dist (e.g. assets, vite icons, etc.)
+		targetPath := filepath.Join("./dist", filepath.Clean(r.URL.Path))
+		info, err := os.Stat(targetPath)
+		if err == nil && !info.IsDir() {
+			fs.ServeHTTP(w, r)
+			return
+		}
+
+		// Fallback to index.html for Single Page Application client routing
+		http.ServeFile(w, r, "./dist/index.html")
+	})
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	fmt.Printf("Golang SQLite Backend listening on port %s...\n", port)
+	fmt.Printf("Golang SQLite + React App listening on port %s...\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
