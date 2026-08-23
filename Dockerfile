@@ -12,10 +12,8 @@ RUN npm run build
 FROM golang:1.22-alpine AS backend-builder
 RUN apk add --no-cache gcc musl-dev
 WORKDIR /app/backend
-COPY backend/go.mod backend/go.sum* ./
-RUN go mod tidy && go mod download
 COPY backend/ ./
-RUN CGO_ENABLED=1 GOOS=linux go build -o /app/server .
+RUN go mod download && CGO_ENABLED=1 GOOS=linux go build -o /app/server .
 
 # Stage 3: Runtime Container
 FROM alpine:3.19
