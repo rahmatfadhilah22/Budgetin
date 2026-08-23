@@ -1,0 +1,8 @@
+{
+  "name": "Remix Budget",
+  "description": "Minimalist personal finance and budget tracker with category management, draft review, and recurring transactions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
