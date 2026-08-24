@@ -3,14 +3,7 @@ import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
 export const MobileTopNav: React.FC = () => {
-  const {
-    currentView,
-    setCurrentView,
-    privacyMode,
-    setPrivacyMode,
-    draftCount,
-    user,
-  } = useBudget();
+  const { currentView, setCurrentView, privacyMode, setPrivacyMode, draftCount, settings } = useBudget();
 
   const tabs: { id: ViewType; label: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -20,16 +13,16 @@ export const MobileTopNav: React.FC = () => {
   ];
 
   return (
-    <header className="md:hidden bg-white w-full top-0 sticky border-b border-[#c4c7c7] z-40">
+    <header className="md:hidden bg-canvas w-full top-0 sticky border-b border-hairline z-40">
       {/* Top Bar */}
       <div className="flex justify-between items-center h-16 px-4 max-w-[1200px] mx-auto">
-        <h1 className="text-xl font-black text-black tracking-tight">Budget</h1>
+        <h1 className="font-display text-2xl font-medium tracking-tight text-ink">Budget</h1>
         <div className="flex items-center space-x-3">
           {/* Privacy Toggle */}
           <button
             aria-label="Privacy Toggle"
             onClick={() => setPrivacyMode((prev) => !prev)}
-            className="text-[#444748] hover:text-black transition-colors cursor-pointer p-1 active:opacity-70"
+            className="text-muted hover:text-ink transition-colors cursor-pointer p-1 active:opacity-70"
           >
             <span
               className={`material-symbols-outlined text-[24px] ${
@@ -40,34 +33,30 @@ export const MobileTopNav: React.FC = () => {
             </span>
           </button>
 
-          {/* Notifications button */}
+          {/* Alerts button */}
           <button
             onClick={() => setCurrentView('transactions')}
             aria-label="Notifications"
-            className="text-[#444748] hover:text-black transition-colors cursor-pointer p-1 active:opacity-70 relative"
+            className="text-muted hover:text-ink transition-colors cursor-pointer p-1 active:opacity-70 relative"
           >
             <span className="material-symbols-outlined text-[24px]">notifications</span>
             {draftCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[#b45309] rounded-full" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
             )}
           </button>
 
           {/* User Avatar */}
           <button
             onClick={() => setCurrentView('settings')}
-            className="w-8 h-8 rounded-full overflow-hidden bg-[#e1e3e4] border border-[#c4c7c7] flex-shrink-0 cursor-pointer"
+            className="w-8 h-8 rounded-full bg-surface-card border border-hairline text-body flex items-center justify-center font-semibold text-sm flex-shrink-0 cursor-pointer"
           >
-            <img
-              src={user.avatarUrl}
-              alt="User profile"
-              className="w-full h-full object-cover"
-            />
+            {settings.name.trim().slice(0, 1).toUpperCase() || 'U'}
           </button>
         </div>
       </div>
 
       {/* Horizontal Nav Tabs */}
-      <nav className="flex space-x-6 px-4 overflow-x-auto no-scrollbar border-t border-[#f3f4f5]">
+      <nav className="flex space-x-6 px-4 overflow-x-auto no-scrollbar border-t border-hairline-soft">
         {tabs.map((tab) => {
           const isActive = currentView === tab.id;
           return (
@@ -76,14 +65,14 @@ export const MobileTopNav: React.FC = () => {
               onClick={() => setCurrentView(tab.id)}
               className={`py-2 whitespace-nowrap text-sm font-semibold transition-colors duration-150 cursor-pointer relative ${
                 isActive
-                  ? 'text-black border-b-2 border-black font-bold'
-                  : 'text-[#444748] hover:text-black font-medium'
+                  ? 'text-ink border-b-2 border-primary font-bold'
+                  : 'text-muted hover:text-ink font-medium'
               }`}
             >
               <span className="flex items-center space-x-1.5">
                 <span>{tab.label}</span>
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="text-[10px] px-1.5 py-0.2 bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] rounded-full font-bold">
+                  <span className="text-[10px] px-1.5 py-0.2 bg-warning/15 text-accent-amber border border-warning/40 rounded-full font-bold">
                     {tab.badge}
                   </span>
                 ) : null}

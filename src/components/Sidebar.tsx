@@ -3,7 +3,7 @@ import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
 export const Sidebar: React.FC = () => {
-  const { currentView, setCurrentView, setQuickAddOpen, draftCount, unpaidRecurring, currency, setCurrency } = useBudget();
+  const { currentView, setCurrentView, setQuickAddOpen, draftCount, unpaidRecurring, settings } = useBudget();
 
   const navItems: { id: ViewType; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -13,16 +13,18 @@ export const Sidebar: React.FC = () => {
     { id: 'settings', label: 'Settings', icon: 'settings' },
   ];
 
+  const initials = settings.name.trim().slice(0, 1).toUpperCase() || 'U';
+
   return (
-    <aside className="hidden md:flex h-screen w-64 fixed left-0 top-0 border-r border-[#c4c7c7] bg-[#f3f4f5] flex-col p-4 space-y-2 z-40">
+    <aside className="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-surface-dark text-on-dark flex-col p-4 space-y-2 z-40 border-r border-[#2a2823]">
       {/* Brand Header */}
       <div className="flex items-center space-x-3 mb-6 mt-1 px-2">
-        <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-black text-xl shadow-xs">
+        <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-display font-semibold text-xl shadow-sm">
           B
         </div>
         <div>
-          <h1 className="text-xl font-black text-black leading-tight tracking-tight">Budget</h1>
-          <p className="text-xs text-[#444748]">Personal Finance</p>
+          <h1 className="text-xl font-bold text-on-dark leading-tight tracking-tight">Budget</h1>
+          <p className="text-xs text-on-dark-soft">Personal Finance</p>
         </div>
       </div>
 
@@ -30,7 +32,7 @@ export const Sidebar: React.FC = () => {
       <button
         id="sidebar-quick-add-btn"
         onClick={() => setQuickAddOpen(true)}
-        className="w-full bg-black text-white hover:bg-[#2e3132] active:scale-95 transition-all duration-150 rounded-lg py-2.5 px-4 mb-4 flex items-center justify-center space-x-2 font-medium text-sm shadow-xs cursor-pointer"
+        className="w-full bg-primary text-on-primary hover:bg-primary-active active:scale-95 transition-all duration-150 rounded-lg py-2.5 px-4 mb-4 flex items-center justify-center space-x-2 font-medium text-sm shadow-sm cursor-pointer"
       >
         <span className="material-symbols-outlined text-[18px]">add</span>
         <span>Quick Add</span>
@@ -47,8 +49,8 @@ export const Sidebar: React.FC = () => {
               onClick={() => setCurrentView(item.id)}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer active:scale-98 ${
                 isActive
-                  ? 'bg-black text-white shadow-xs'
-                  : 'text-[#444748] hover:bg-[#e1e3e4] hover:text-black'
+                  ? 'bg-primary text-on-primary shadow-sm'
+                  : 'text-on-dark-soft hover:bg-surface-dark-elevated hover:text-on-dark'
               }`}
             >
               <div className="flex items-center space-x-3">
@@ -65,8 +67,8 @@ export const Sidebar: React.FC = () => {
                 <span
                   className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                     isActive
-                      ? 'bg-white text-black'
-                      : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                      ? 'bg-on-primary text-primary'
+                      : 'bg-warning/20 text-accent-amber'
                   }`}
                 >
                   {item.badge}
@@ -77,31 +79,15 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Currency Switcher in Sidebar Footer */}
-      <div className="pt-3 border-t border-[#c4c7c7] mt-auto">
-        <div className="bg-[#e1e3e4] p-1 rounded-lg flex items-center justify-between text-xs">
-          <span className="text-[#444748] px-2 font-medium">Currency</span>
-          <div className="flex space-x-1">
-            <button
-              onClick={() => setCurrency('USD')}
-              className={`px-2 py-1 rounded font-medium transition-colors cursor-pointer ${
-                currency === 'USD'
-                  ? 'bg-black text-white'
-                  : 'text-[#444748] hover:text-black'
-              }`}
-            >
-              $ USD
-            </button>
-            <button
-              onClick={() => setCurrency('IDR')}
-              className={`px-2 py-1 rounded font-medium transition-colors cursor-pointer ${
-                currency === 'IDR'
-                  ? 'bg-black text-white'
-                  : 'text-[#444748] hover:text-black'
-              }`}
-            >
-              Rp IDR
-            </button>
+      {/* User footer */}
+      <div className="pt-3 border-t border-[#2a2823] mt-auto">
+        <div className="flex items-center space-x-3 px-2">
+          <div className="w-8 h-8 rounded-full bg-surface-dark-elevated text-on-dark flex items-center justify-center font-semibold text-sm flex-shrink-0">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-on-dark truncate">{settings.name || 'User'}</p>
+            <p className="text-[11px] text-on-dark-soft truncate">{settings.email || 'Local account'}</p>
           </div>
         </div>
       </div>

@@ -1,42 +1,48 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from 'react';
 import {
   Category,
   Transaction,
   RecurringTemplate,
-  UserProfile,
-  BudgetNotification,
-  Currency,
+  Settings,
+  BudgetSnapshot,
   PeriodType,
   ViewType,
 } from '../types';
-import {
-  INITIAL_CATEGORIES,
-  INITIAL_TRANSACTIONS,
-  INITIAL_RECURRING,
-  INITIAL_USER,
-  INITIAL_NOTIFICATIONS,
-} from '../data/initialData';
+import { api, ApiError } from '../api';
+
+export type AuthStatus = 'checking' | 'anonymous' | 'authenticated';
 
 interface BudgetContextType {
-  // State
+  // Auth & boot
+  authStatus: AuthStatus;
+  bootError: string | null;
+  login: (password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  retry: () => void;
+
+  // View state
   currentView: ViewType;
   setCurrentView: (view: ViewType) => void;
+  quickAddOpen: boolean;
+  setQuickAddOpen: (open: boolean) => void;
+  privacyMode: boolean;
+  setPrivacyMode: React.Dispatch<React.SetStateAction<boolean>>;
+
+  // Data
   categories: Category[];
   transactions: Transaction[];
   recurring: RecurringTemplate[];
-  user: UserProfile;
-  notifications: BudgetNotification[];
-  privacyMode: boolean;
-  setPrivacyMode: React.Dispatch<React.SetStateAction<boolean>>;
-  quickAddOpen: boolean;
-  setQuickAddOpen: (open: boolean) => void;
-  reviewDraftsOpen: boolean;
-  setReviewDraftsOpen: (open: boolean) => void;
+  settings: Settings;
 
   // Currency & formatting
-  currency: Currency;
-  setCurrency: (c: Currency) => void;
-  formatCurrency: (amount: number, overrideCurrency?: Currency) => string;
+  formatCurrency: (amount: number) => string;
   period: PeriodType;
   setPeriod: (p: PeriodType) => void;
   cycleDateRange: string;
@@ -50,409 +56,296 @@ interface BudgetContextType {
   unpaidRecurring: RecurringTemplate[];
 
   // Actions
-  addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => Transaction;
-  updateTransaction: (id: string, tx: Partial<Transaction>) => void;
-  deleteTransaction: (id: string) => void;
-  completeDraft: (id: string, categoryId: string, note?: string) => void;
+  addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => Promise<void>;
+  updateTransaction: (id: string, tx: Partial<Transaction>) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
+  completeDraft: (id: string, categoryId: string, note?: string) => Promise<void>;
 
-  addCategory: (cat: Omit<Category, 'id'>) => Category;
-  updateCategory: (id: string, cat: Partial<Category>) => void;
-  deleteCategory: (id: string) => void;
+  addCategory: (cat: Omit<Category, 'id'>) => Promise<void>;
+  updateCategory: (id: string, cat: Partial<Category>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
 
-  addRecurring: (rec: Omit<RecurringTemplate, 'id'>) => RecurringTemplate;
-  updateRecurring: (id: string, rec: Partial<RecurringTemplate>) => void;
-  deleteRecurring: (id: string) => void;
-  logRecurringPayment: (id: string) => void;
+  addRecurring: (rec: Omit<RecurringTemplate, 'id'>) => Promise<void>;
+  updateRecurring: (id: string, rec: Partial<RecurringTemplate>) => Promise<void>;
+  deleteRecurring: (id: string) => Promise<void>;
+  logRecurringPayment: (id: string) => Promise<void>;
 
-  updateUser: (updates: Partial<UserProfile>) => void;
-  markNotificationRead: (id: string) => void;
-  clearNotifications: () => void;
+  updateSettings: (updates: Partial<Settings>) => Promise<void>;
 
-  // Data management
+  // Data management (client-side from current snapshot)
   exportCSV: () => void;
   exportJSON: () => void;
-  importJSON: (jsonString: string) => boolean;
-  resetToSampleData: () => void;
 }
 
 const BudgetContext = createContext<BudgetContextType | undefined>(undefined);
 
-const STORAGE_KEYS = {
-  CATEGORIES: 'budget_app_categories',
-  TRANSACTIONS: 'budget_app_transactions',
-  RECURRING: 'budget_app_recurring',
-  USER: 'budget_app_user',
-  NOTIFICATIONS: 'budget_app_notifications',
-  PRIVACY: 'budget_app_privacy',
+const EMPTY_SNAPSHOT: BudgetSnapshot = {
+  categories: [],
+  transactions: [],
+  recurring: [],
+  settings: { name: '', email: '', cycleStartDay: 1, period: 'monthly', notificationsEnabled: true },
 };
 
+const TODAY_LABEL = new Date().toISOString().slice(0, 10);
+
 export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('checking');
+  const [bootError, setBootError] = useState<string | null>(null);
+  const [data, setData] = useState<BudgetSnapshot>(EMPTY_SNAPSHOT);
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [reviewDraftsOpen, setReviewDraftsOpen] = useState(false);
+  const [privacyMode, setPrivacyMode] = useState(false);
 
-  // Initialize from LocalStorage or initial data
-  const [categories, setCategories] = useState<Category[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
-      return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
-    } catch {
-      return INITIAL_CATEGORIES;
-    }
-  });
-
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-      return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
-    } catch {
-      return INITIAL_TRANSACTIONS;
-    }
-  });
-
-  const [recurring, setRecurring] = useState<RecurringTemplate[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.RECURRING);
-      return saved ? JSON.parse(saved) : INITIAL_RECURRING;
-    } catch {
-      return INITIAL_RECURRING;
-    }
-  });
-
-  const [user, setUser] = useState<UserProfile>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.USER);
-      return saved ? JSON.parse(saved) : INITIAL_USER;
-    } catch {
-      return INITIAL_USER;
-    }
-  });
-
-  const [notifications, setNotifications] = useState<BudgetNotification[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-      return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
-    } catch {
-      return INITIAL_NOTIFICATIONS;
-    }
-  });
-
-  const [privacyMode, setPrivacyMode] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.PRIVACY);
-      return saved ? JSON.parse(saved) : false;
-    } catch {
-      return false;
-    }
-  });
-
-  // Sync to LocalStorage
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
-  }, [categories]);
+  const loadData = useCallback(async () => {
+    const snapshot = await api<BudgetSnapshot>('/api/data');
+    setData(snapshot);
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
-  }, [transactions]);
+    let cancelled = false;
+    (async () => {
+      try {
+        await api('/api/session');
+        if (cancelled) return;
+        await loadData();
+        if (cancelled) return;
+        setAuthStatus('authenticated');
+      } catch {
+        if (!cancelled) setAuthStatus('anonymous');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadData]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.RECURRING, JSON.stringify(recurring));
-  }, [recurring]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-  }, [user]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
-  }, [notifications]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PRIVACY, JSON.stringify(privacyMode));
-  }, [privacyMode]);
-
-  // Currency
-  const currency = user.currency;
-  const setCurrency = (c: Currency) => {
-    setUser((prev) => ({ ...prev, currency: c }));
-  };
-
-  const period = user.period;
-  const setPeriod = (p: PeriodType) => {
-    setUser((prev) => ({ ...prev, period: p }));
-  };
-
-  // Date Range calculation for active cycle (e.g. 25 Jul - 24 Aug or weekly)
-  const cycleDateRange = useMemo(() => {
-    if (period === 'weekly') {
-      return '17 Aug - 23 Aug';
+  const retry = useCallback(async () => {
+    setBootError(null);
+    setAuthStatus('checking');
+    try {
+      await loadData();
+      setAuthStatus('authenticated');
+    } catch (error) {
+      setBootError(error instanceof ApiError ? error.message : 'Could not load data');
     }
-    return '25 Jul - 24 Aug';
-  }, [period]);
+  }, [loadData]);
 
-  // Format currency
-  const formatCurrency = (amount: number, overrideCurrency?: Currency): string => {
-    if (privacyMode) {
-      return '••••••';
+  const login = useCallback(async (password: string) => {
+    await api<{ authenticated: boolean }>('/api/login', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+    await loadData();
+    setAuthStatus('authenticated');
+  }, [loadData]);
+
+  const logout = useCallback(async () => {
+    try {
+      await api<void>('/api/logout', { method: 'POST' });
+    } finally {
+      setData(EMPTY_SNAPSHOT);
+      setAuthStatus('anonymous');
+      setCurrentView('dashboard');
     }
-    const curr = overrideCurrency || currency;
-    if (curr === 'IDR') {
-      // In IDR, typically numbers are scaled or formatted as Rp 50,000 / Rp 4,250,000
-      // If amount is small (like base USD unit < 5000), let's scale to realistic Rupiah or format directly
-      const idrValue = amount < 1000 ? amount * 1000 : amount;
-      return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0,
-      }).format(idrValue).replace('IDR', 'Rp');
-    }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
+  }, []);
 
-  // Drafts & Completed Calculations
-  const drafts = useMemo(() => {
-    return transactions.filter((t) => t.isDraft);
-  }, [transactions]);
-
+  // Derived metrics
+  const drafts = useMemo(() => data.transactions.filter((t) => t.isDraft), [data.transactions]);
   const draftCount = drafts.length;
-
-  const completedTransactions = useMemo(() => {
-    return transactions.filter((t) => !t.isDraft);
-  }, [transactions]);
-
-  const totalIncome = useMemo(() => {
-    return completedTransactions
-      .filter((t) => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-  }, [completedTransactions]);
-
-  const totalExpenses = useMemo(() => {
-    return completedTransactions
-      .filter((t) => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-  }, [completedTransactions]);
-
+  const completedTransactions = useMemo(
+    () => data.transactions.filter((t) => !t.isDraft),
+    [data.transactions]
+  );
+  const totalIncome = useMemo(
+    () => completedTransactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+    [completedTransactions]
+  );
+  const totalExpenses = useMemo(
+    () => completedTransactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
+    [completedTransactions]
+  );
   const remainingBalance = totalIncome - totalExpenses;
+  const unpaidRecurring = useMemo(
+    () => data.recurring.filter((r) => !r.lastPaidDate),
+    [data.recurring]
+  );
 
-  // Unpaid recurring items (for top warning banner)
-  const unpaidRecurring = useMemo(() => {
-    return recurring.filter((r) => !r.lastPaidDate);
-  }, [recurring]);
+  const period = data.settings.period;
+  const cycleDateRange = period === 'weekly'
+    ? `${TODAY_LABEL} week`
+    : `Cycle starts on the ${data.settings.cycleStartDay}`;
 
-  // Transaction CRUD
-  const addTransaction = (tx: Omit<Transaction, 'id' | 'createdAt'>): Transaction => {
-    const newTx: Transaction = {
-      ...tx,
-      id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      createdAt: Date.now(),
-    };
-    setTransactions((prev) => [newTx, ...prev]);
-    return newTx;
-  };
-
-  const updateTransaction = (id: string, updates: Partial<Transaction>) => {
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
-    );
-  };
-
-  const deleteTransaction = (id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  const completeDraft = (id: string, categoryId: string, note?: string) => {
-    setTransactions((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          return {
-            ...t,
-            categoryId,
-            note: note !== undefined ? note : t.note,
-            isDraft: false,
-          };
-        }
-        return t;
-      })
-    );
-  };
-
-  // Category CRUD
-  const addCategory = (cat: Omit<Category, 'id'>): Category => {
-    const newCat: Category = {
-      ...cat,
-      id: `cat-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-    };
-    setCategories((prev) => [...prev, newCat]);
-    return newCat;
-  };
-
-  const updateCategory = (id: string, updates: Partial<Category>) => {
-    setCategories((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
-    );
-  };
-
-  const deleteCategory = (id: string) => {
-    setCategories((prev) => prev.filter((c) => c.id !== id));
-  };
-
-  // Recurring CRUD
-  const addRecurring = (rec: Omit<RecurringTemplate, 'id'>): RecurringTemplate => {
-    const newRec: RecurringTemplate = {
-      ...rec,
-      id: `rec-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-    };
-    setRecurring((prev) => [...prev, newRec]);
-    return newRec;
-  };
-
-  const updateRecurring = (id: string, updates: Partial<RecurringTemplate>) => {
-    setRecurring((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
-    );
-  };
-
-  const deleteRecurring = (id: string) => {
-    setRecurring((prev) => prev.filter((r) => r.id !== id));
-  };
-
-  const logRecurringPayment = (id: string) => {
-    const recItem = recurring.find((r) => r.id === id);
-    if (!recItem) return;
-
-    // Add transaction
-    addTransaction({
-      merchant: recItem.name,
-      amount: recItem.defaultAmount,
-      categoryId: recItem.categoryId,
-      date: 'Today',
-      type: 'expense',
-      isRecurring: true,
-      note: `Recurring payment for ${recItem.name}`,
+  const setPeriod = useCallback(async (p: PeriodType) => {
+    await api<Settings>('/api/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ ...data.settings, period: p }),
     });
+    setData((prev) => ({ ...prev, settings: { ...prev.settings, period: p } }));
+  }, [data.settings]);
 
-    // Mark as paid
-    updateRecurring(id, {
-      lastPaidDate: new Date().toISOString().split('T')[0],
+  const updateSettings = useCallback(async (updates: Partial<Settings>) => {
+    const next = { ...data.settings, ...updates };
+    await api<Settings>('/api/settings', { method: 'PUT', body: JSON.stringify(next) });
+    setData((prev) => ({ ...prev, settings: next }));
+  }, [data.settings]);
+
+  const formatCurrency = useCallback(
+    (amount: number) =>
+      privacyMode
+        ? '••••••'
+        : new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            maximumFractionDigits: 0,
+          }).format(amount).replace('IDR', 'Rp'),
+    [privacyMode]
+  );
+
+  // Mutations — update local state only from the server-confirmed entity.
+  const addTransaction = useCallback(async (tx: Omit<Transaction, 'id' | 'createdAt'>) => {
+    const created = await api<Transaction>('/api/transactions', {
+      method: 'POST',
+      body: JSON.stringify(tx),
     });
-  };
+    setData((prev) => ({ ...prev, transactions: [created, ...prev.transactions] }));
+  }, []);
 
-  // User & Notifications
-  const updateUser = (updates: Partial<UserProfile>) => {
-    setUser((prev) => ({ ...prev, ...updates }));
-  };
+  const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
+    const current = data.transactions.find((t) => t.id === id);
+    if (!current) throw new ApiError(404, 'Transaction not found');
+    const updated = await api<Transaction>(`/api/transactions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...current, ...updates }),
+    });
+    setData((prev) => ({
+      ...prev,
+      transactions: prev.transactions.map((t) => (t.id === id ? updated : t)),
+    }));
+  }, [data.transactions]);
 
-  const markNotificationRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+  const deleteTransaction = useCallback(async (id: string) => {
+    await api<void>(`/api/transactions/${id}`, { method: 'DELETE' });
+    setData((prev) => ({ ...prev, transactions: prev.transactions.filter((t) => t.id !== id) }));
+  }, []);
+
+  const completeDraft = useCallback(async (id: string, categoryId: string, note?: string) => {
+    const current = data.transactions.find((t) => t.id === id);
+    if (!current) throw new ApiError(404, 'Transaction not found');
+    await updateTransaction(id, {
+      categoryId,
+      isDraft: false,
+      note: note !== undefined ? note : current.note,
+    });
+  }, [data.transactions, updateTransaction]);
+
+  const addCategory = useCallback(async (cat: Omit<Category, 'id'>) => {
+    const created = await api<Category>('/api/categories', {
+      method: 'POST',
+      body: JSON.stringify(cat),
+    });
+    setData((prev) => ({ ...prev, categories: [...prev.categories, created] }));
+  }, []);
+
+  const updateCategory = useCallback(async (id: string, cat: Partial<Category>) => {
+    const current = data.categories.find((c) => c.id === id);
+    if (!current) throw new ApiError(404, 'Category not found');
+    const updated = await api<Category>(`/api/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...current, ...cat }),
+    });
+    setData((prev) => ({
+      ...prev,
+      categories: prev.categories.map((c) => (c.id === id ? updated : c)),
+    }));
+  }, [data.categories]);
+
+  const deleteCategory = useCallback(async (id: string) => {
+    await api<void>(`/api/categories/${id}`, { method: 'DELETE' });
+    setData((prev) => ({ ...prev, categories: prev.categories.filter((c) => c.id !== id) }));
+  }, []);
+
+  const addRecurring = useCallback(async (rec: Omit<RecurringTemplate, 'id'>) => {
+    const created = await api<RecurringTemplate>('/api/recurring', {
+      method: 'POST',
+      body: JSON.stringify(rec),
+    });
+    setData((prev) => ({ ...prev, recurring: [...prev.recurring, created] }));
+  }, []);
+
+  const updateRecurring = useCallback(async (id: string, rec: Partial<RecurringTemplate>) => {
+    const current = data.recurring.find((r) => r.id === id);
+    if (!current) throw new ApiError(404, 'Recurring template not found');
+    const updated = await api<RecurringTemplate>(`/api/recurring/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...current, ...rec }),
+    });
+    setData((prev) => ({
+      ...prev,
+      recurring: prev.recurring.map((r) => (r.id === id ? updated : r)),
+    }));
+  }, [data.recurring]);
+
+  const deleteRecurring = useCallback(async (id: string) => {
+    await api<void>(`/api/recurring/${id}`, { method: 'DELETE' });
+    setData((prev) => ({ ...prev, recurring: prev.recurring.filter((r) => r.id !== id) }));
+  }, []);
+
+  const logRecurringPayment = useCallback(async (id: string) => {
+    const result = await api<{ transaction: Transaction; recurring: RecurringTemplate }>(
+      `/api/recurring/${id}/log`,
+      { method: 'POST' }
     );
-  };
+    setData((prev) => ({
+      ...prev,
+      transactions: [result.transaction, ...prev.transactions],
+      recurring: prev.recurring.map((r) => (r.id === id ? result.recurring : r)),
+    }));
+  }, []);
 
-  const clearNotifications = () => {
-    setNotifications([]);
-  };
-
-  // Data Export & Import
-  const exportCSV = () => {
+  // Client-side export from the current snapshot (backup helpers only).
+  const exportCSV = useCallback(() => {
     const headers = ['ID', 'Date', 'Merchant', 'Type', 'Amount', 'Category', 'IsDraft', 'IsRecurring', 'Note'];
-    const rows = transactions.map((t) => {
-      const cat = categories.find((c) => c.id === t.categoryId)?.name || 'Uncategorized';
+    const rows = data.transactions.map((t) => {
+      const cat = data.categories.find((c) => c.id === t.categoryId)?.name || 'Uncategorized';
       return [
-        `"${t.id}"`,
-        `"${t.date}"`,
-        `"${t.merchant.replace(/"/g, '""')}"`,
-        `"${t.type}"`,
-        t.amount,
-        `"${cat}"`,
-        t.isDraft ? 'Yes' : 'No',
-        t.isRecurring ? 'Yes' : 'No',
+        `"${t.id}"`, `"${t.date}"`, `"${t.merchant.replace(/"/g, '""')}"`, `"${t.type}"`, t.amount,
+        `"${cat}"`, t.isDraft ? 'Yes' : 'No', t.isRecurring ? 'Yes' : 'No',
         `"${(t.note || '').replace(/"/g, '""')}"`,
       ].join(',');
     });
+    downloadText([headers.join(','), ...rows].join('\n'), `budget_transactions_${TODAY_LABEL}.csv`, 'text/csv');
+  }, [data]);
 
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `budget_transactions_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const exportJSON = () => {
-    const data = {
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      user,
-      categories,
-      transactions,
-      recurring,
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `budget_backup_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const importJSON = (jsonString: string): boolean => {
-    try {
-      const parsed = JSON.parse(jsonString);
-      if (parsed.categories && Array.isArray(parsed.categories)) {
-        setCategories(parsed.categories);
-      }
-      if (parsed.transactions && Array.isArray(parsed.transactions)) {
-        setTransactions(parsed.transactions);
-      }
-      if (parsed.recurring && Array.isArray(parsed.recurring)) {
-        setRecurring(parsed.recurring);
-      }
-      if (parsed.user) {
-        setUser(parsed.user);
-      }
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  const resetToSampleData = () => {
-    setCategories(INITIAL_CATEGORIES);
-    setTransactions(INITIAL_TRANSACTIONS);
-    setRecurring(INITIAL_RECURRING);
-    setUser(INITIAL_USER);
-    setNotifications(INITIAL_NOTIFICATIONS);
-    setPrivacyMode(false);
-  };
+  const exportJSON = useCallback(() => {
+    downloadText(
+      JSON.stringify(
+        { version: '1.0', exportedAt: new Date().toISOString(), settings: data.settings, categories: data.categories, transactions: data.transactions, recurring: data.recurring },
+        null,
+        2
+      ),
+      `budget_backup_${TODAY_LABEL}.json`,
+      'application/json'
+    );
+  }, [data]);
 
   return (
     <BudgetContext.Provider
       value={{
+        authStatus,
+        bootError,
+        login,
+        logout,
+        retry,
         currentView,
         setCurrentView,
-        categories,
-        transactions,
-        recurring,
-        user,
-        notifications,
-        privacyMode,
-        setPrivacyMode,
         quickAddOpen,
         setQuickAddOpen,
-        reviewDraftsOpen,
-        setReviewDraftsOpen,
-        currency,
-        setCurrency,
+        privacyMode,
+        setPrivacyMode,
+        categories: data.categories,
+        transactions: data.transactions,
+        recurring: data.recurring,
+        settings: data.settings,
         formatCurrency,
         period,
         setPeriod,
@@ -474,19 +367,27 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateRecurring,
         deleteRecurring,
         logRecurringPayment,
-        updateUser,
-        markNotificationRead,
-        clearNotifications,
+        updateSettings,
         exportCSV,
         exportJSON,
-        importJSON,
-        resetToSampleData,
       }}
     >
       {children}
     </BudgetContext.Provider>
   );
 };
+
+function downloadText(content: string, filename: string, mime: string) {
+  const blob = new Blob([content], { type: `${mime};charset=utf-8;` });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 export const useBudget = () => {
   const context = useContext(BudgetContext);

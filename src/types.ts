@@ -1,5 +1,3 @@
-export type Currency = 'USD' | 'IDR';
-
 export type PeriodType = 'monthly' | 'weekly';
 
 export type ViewType = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'settings';
@@ -8,17 +6,19 @@ export interface Category {
   id: string;
   name: string;
   type: 'expense' | 'income';
+  /** Integer amount in IDR rupiah. */
   budget: number;
-  icon: string; // Material symbol icon name e.g. 'shopping_cart', 'home', 'directions_car'
-  color?: string;
+  icon: string; // Material symbol icon name e.g. 'shopping_cart', 'home'
 }
 
 export interface Transaction {
   id: string;
   merchant: string;
+  /** Integer amount in IDR rupiah. */
   amount: number;
   categoryId?: string;
-  date: string; // ISO or human string e.g. "Today", "Yesterday", "2026-08-23"
+  /** ISO date YYYY-MM-DD. */
+  date: string;
   type: 'expense' | 'income';
   isDraft?: boolean;
   isRecurring?: boolean;
@@ -30,30 +30,25 @@ export interface RecurringTemplate {
   id: string;
   name: string;
   categoryId: string;
+  /** Integer amount in IDR rupiah. */
   defaultAmount: number;
-  dueDay: number; // Day of month e.g. 1, 15, 28
+  dueDay: number;
   frequency: 'monthly' | 'weekly' | 'yearly';
   icon: string;
   lastPaidDate?: string;
 }
 
-export interface UserProfile {
+export interface Settings {
   name: string;
   email: string;
-  avatarUrl: string;
-  currency: Currency;
-  period: PeriodType;
   cycleStartDay: number;
+  period: PeriodType;
   notificationsEnabled: boolean;
-  theme: 'light' | 'dark' | 'system';
 }
 
-export interface BudgetNotification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'warning' | 'info' | 'reminder';
-  date: string;
-  actionUrl?: ViewType;
-  read: boolean;
+export interface BudgetSnapshot {
+  categories: Category[];
+  transactions: Transaction[];
+  recurring: RecurringTemplate[];
+  settings: Settings;
 }
