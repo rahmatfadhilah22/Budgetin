@@ -98,66 +98,66 @@ export const CategoriesView: React.FC = () => {
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-200">
       {/* Top Header */}
-      <div className="flex justify-between items-end pb-2 border-b border-[#c4c7c7]">
+      <div className="flex justify-between items-end pb-2 border-b border-hairline">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-black">
+          <h1 className="font-display text-2xl md:text-3xl font-medium tracking-tight text-ink">
             Categories
           </h1>
-          <p className="text-sm text-[#444748] mt-1">
+          <p className="text-sm text-muted mt-1">
             Manage your budget categories and spending limits.
           </p>
         </div>
         <button
           onClick={openNewCategoryModal}
-          className="bg-black text-white hover:bg-[#2e3132] px-4 py-2 rounded-lg text-xs md:text-sm font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
+          className="bg-primary text-on-primary hover:bg-primary-active px-4 py-2 rounded-lg text-xs md:text-sm font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-sm"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
           <span>New Category</span>
         </button>
       </div>
 
-      {/* Categories Bento Grid (Matching Image 9 & 10) */}
+      {/* Categories Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {categories.map((cat) => {
           return (
             <div
               key={cat.id}
               onClick={() => openEditCategoryModal(cat)}
-              className="bg-white border border-[#c4c7c7] p-6 rounded-2xl flex flex-col justify-between hover:bg-[#f8f9fa] hover:border-[#191c1d] transition-all group cursor-pointer shadow-2xs relative"
+              className="bg-surface-card border border-hairline p-6 rounded-2xl flex flex-col justify-between hover:bg-surface-soft hover:border-ink transition-all group cursor-pointer relative"
             >
               {/* Top Row: Icon + Type Badge */}
               <div className="flex justify-between items-start mb-4">
                 <div
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
                     cat.id === 'groceries'
-                      ? 'bg-[#6cf8bb] text-[#00714d]'
-                      : 'bg-[#edeeef] text-black group-hover:bg-black group-hover:text-white transition-colors'
+                      ? 'bg-success/20 text-success'
+                      : 'bg-surface-soft text-body group-hover:bg-ink group-hover:text-canvas transition-colors'
                   }`}
                 >
                   <span className="material-symbols-outlined text-[24px]">
                     {cat.icon}
                   </span>
                 </div>
-                <span className="text-xs px-2 py-0.5 border border-[#c4c7c7] rounded-md text-[#444748] capitalize font-medium">
+                <span className="text-xs px-2 py-0.5 border border-hairline rounded-md text-muted capitalize font-medium">
                   {cat.type}
                 </span>
               </div>
 
               {/* Category Name */}
-              <h3 className="text-lg font-bold text-black mb-4">{cat.name}</h3>
+              <h3 className="font-display text-xl font-medium text-ink tracking-tight mb-4">{cat.name}</h3>
 
               {/* Bottom: Budget amount + Edit button */}
-              <div className="flex justify-between items-end pt-3 border-t border-[#f3f4f5] mt-auto">
+              <div className="flex justify-between items-end pt-3 border-t border-hairline-soft mt-auto">
                 <div className="flex flex-col">
-                  <span className="text-xs text-[#747878] mb-0.5">Budget</span>
-                  <span className="text-xl font-bold text-black tracking-tight">
+                  <span className="text-xs text-muted-soft mb-0.5">Budget</span>
+                  <span className="font-display text-xl font-semibold text-ink tracking-tight">
                     {formatCurrency(cat.budget)}
                   </span>
                 </div>
                 <button
                   type="button"
                   title="Edit category"
-                  className="text-[#747878] group-hover:text-black p-1.5 hover:bg-[#e1e3e4] rounded-full transition-colors"
+                  className="text-muted-soft group-hover:text-ink p-1.5 hover:bg-hairline rounded-full transition-colors"
                 >
                   <span className="material-symbols-outlined text-[20px]">edit</span>
                 </button>
@@ -169,34 +169,34 @@ export const CategoriesView: React.FC = () => {
         {/* Add Category Dashed Placeholder Card */}
         <div
           onClick={openNewCategoryModal}
-          className="bg-white border-2 border-dashed border-[#c4c7c7] p-6 rounded-2xl flex flex-col items-center justify-center text-[#444748] hover:bg-[#f8f9fa] hover:border-black hover:text-black transition-all cursor-pointer min-h-[190px] shadow-2xs group"
+          className="bg-surface-card border-2 border-dashed border-hairline p-6 rounded-2xl flex flex-col items-center justify-center text-muted hover:bg-surface-soft hover:border-ink hover:text-ink transition-all cursor-pointer min-h-[190px] group"
         >
-          <div className="w-12 h-12 rounded-full bg-[#edeeef] group-hover:bg-black group-hover:text-white flex items-center justify-center mb-2 transition-colors">
+          <div className="w-12 h-12 rounded-full bg-surface-soft group-hover:bg-ink group-hover:text-canvas flex items-center justify-center mb-2 transition-colors">
             <span className="material-symbols-outlined text-[26px]">add</span>
           </div>
           <span className="text-sm font-bold">Add Category</span>
-          <span className="text-xs text-[#747878] mt-0.5">Configure spending limit</span>
+          <span className="text-xs text-muted-soft mt-0.5">Configure spending limit</span>
         </div>
       </div>
 
-      {/* Slide-over / Modal for Category Editing (Image 10) */}
+      {/* Slide-over / Modal for Category Editing */}
       {modalOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex justify-end animate-in fade-in duration-150"
+          className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex justify-end animate-in fade-in duration-150"
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="bg-white w-full md:w-[420px] h-full border-l border-[#c4c7c7] flex flex-col shadow-2xl animate-in slide-in-from-right duration-200"
+            className="bg-surface-soft w-full md:w-[420px] h-full border-l border-hairline flex flex-col shadow-2xl animate-in slide-in-from-right duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="p-6 border-b border-[#c4c7c7] flex justify-between items-center bg-white sticky top-0 z-10">
-              <h3 className="text-xl font-bold text-black tracking-tight">
+            <div className="p-6 border-b border-hairline flex justify-between items-center bg-surface-soft sticky top-0 z-10">
+              <h3 className="font-display text-xl font-medium text-ink tracking-tight">
                 {editingCategory ? 'Edit Category' : 'New Category'}
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-[#444748] hover:text-black p-1 rounded-full hover:bg-[#f3f4f5] cursor-pointer"
+                className="text-muted hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
@@ -206,7 +206,7 @@ export const CategoriesView: React.FC = () => {
             <form onSubmit={handleSave} className="p-6 overflow-y-auto flex-1 space-y-6">
               {/* Category Name */}
               <div>
-                <label className="block text-xs font-semibold text-[#444748] uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
                   Category Name
                 </label>
                 <input
@@ -215,23 +215,23 @@ export const CategoriesView: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Groceries, Entertainment"
-                  className="w-full bg-transparent border-0 border-b border-[#747878] focus:border-black focus:ring-0 px-0 py-2 text-xl font-semibold text-black transition-colors outline-none"
+                  className="w-full bg-transparent border-0 border-b border-muted-soft focus:border-ink focus:ring-0 px-0 py-2 text-xl font-semibold text-ink transition-colors outline-none"
                 />
               </div>
 
               {/* Type Toggle */}
               <div>
-                <label className="block text-xs font-semibold text-[#444748] uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
                   Type
                 </label>
-                <div className="flex p-1 bg-[#f3f4f5] rounded-xl border border-[#c4c7c7]">
+                <div className="flex p-1 bg-surface-card rounded-xl border border-hairline">
                   <button
                     type="button"
                     onClick={() => setType('income')}
                     className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                       type === 'income'
-                        ? 'bg-black text-white shadow-xs'
-                        : 'text-[#444748] hover:text-black'
+                        ? 'bg-ink text-on-dark shadow-sm'
+                        : 'text-muted hover:text-ink'
                     }`}
                   >
                     Income
@@ -241,8 +241,8 @@ export const CategoriesView: React.FC = () => {
                     onClick={() => setType('expense')}
                     className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                       type === 'expense'
-                        ? 'bg-black text-white shadow-xs'
-                        : 'text-[#444748] hover:text-black'
+                        ? 'bg-ink text-on-dark shadow-sm'
+                        : 'text-muted hover:text-ink'
                     }`}
                   >
                     Expense
@@ -252,11 +252,11 @@ export const CategoriesView: React.FC = () => {
 
               {/* Monthly Budget */}
               <div>
-                <label className="block text-xs font-semibold text-[#444748] uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
                   Monthly Budget
                 </label>
-                <div className="flex items-center border-b border-[#747878] focus-within:border-black transition-colors pb-1">
-                  <span className="text-xl font-bold text-[#444748] mr-2">
+                <div className="flex items-center border-b border-muted-soft focus-within:border-ink transition-colors pb-1">
+                  <span className="text-xl font-medium text-muted mr-2">
                     {currency === 'IDR' ? 'Rp' : '$'}
                   </span>
                   <input
@@ -265,14 +265,14 @@ export const CategoriesView: React.FC = () => {
                     value={budgetStr}
                     onChange={(e) => setBudgetStr(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-transparent border-0 focus:ring-0 px-0 py-1 text-xl font-bold text-black outline-none"
+                    className="w-full bg-transparent border-0 focus:ring-0 px-0 py-1 font-display text-xl font-semibold text-ink outline-none"
                   />
                 </div>
               </div>
 
               {/* Icon Picker Grid */}
               <div>
-                <label className="block text-xs font-semibold text-[#444748] uppercase tracking-wider mb-3">
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-3">
                   Icon
                 </label>
                 <div className="grid grid-cols-5 gap-2.5">
@@ -285,8 +285,8 @@ export const CategoriesView: React.FC = () => {
                         onClick={() => setSelectedIcon(iconName)}
                         className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-black text-white ring-2 ring-black shadow-xs'
-                            : 'bg-[#edeeef] text-black hover:bg-[#e1e3e4]'
+                            ? 'bg-primary text-on-primary ring-2 ring-primary shadow-sm'
+                            : 'bg-surface-card text-body hover:bg-hairline'
                         }`}
                       >
                         <span className="material-symbols-outlined text-[22px]">
@@ -300,11 +300,11 @@ export const CategoriesView: React.FC = () => {
 
               {/* Danger Zone: Delete Category */}
               {editingCategory && (
-                <div className="pt-4 border-t border-[#f3f4f5]">
+                <div className="pt-4 border-t border-hairline-soft">
                   <button
                     type="button"
                     onClick={handleDelete}
-                    className="text-xs text-[#ba1a1a] hover:underline font-semibold flex items-center space-x-1 cursor-pointer"
+                    className="text-xs text-error hover:underline font-semibold flex items-center space-x-1 cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                     <span>Delete this category</span>
@@ -314,11 +314,11 @@ export const CategoriesView: React.FC = () => {
             </form>
 
             {/* Modal Footer */}
-            <div className="p-6 border-t border-[#c4c7c7] bg-white sticky bottom-0">
+            <div className="p-6 border-t border-hairline bg-surface-soft sticky bottom-0">
               <button
                 type="button"
                 onClick={handleSave}
-                className="w-full py-3.5 bg-black text-white font-semibold text-sm rounded-xl hover:bg-[#2e3132] active:scale-98 transition-all cursor-pointer shadow-sm"
+                className="w-full py-3.5 bg-primary text-on-primary font-semibold text-sm rounded-xl hover:bg-primary-active active:scale-98 transition-all cursor-pointer shadow-sm"
               >
                 {editingCategory ? 'Save Changes' : 'Create Category'}
               </button>

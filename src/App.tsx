@@ -15,7 +15,7 @@ const MainLayout: React.FC = () => {
   const { currentView } = useBudget();
 
   return (
-    <div className="min-h-screen bg-[#ffffff] text-[#191c1d] flex flex-col md:flex-row antialiased selection:bg-black selection:text-white">
+    <div className="min-h-screen bg-canvas text-ink flex flex-col md:flex-row antialiased selection:bg-ink selection:text-canvas">
       {/* Desktop Fixed Sidebar */}
       <Sidebar />
 

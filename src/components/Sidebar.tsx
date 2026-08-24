@@ -14,15 +14,15 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="hidden md:flex h-screen w-64 fixed left-0 top-0 border-r border-[#c4c7c7] bg-[#f3f4f5] flex-col p-4 space-y-2 z-40">
+    <aside className="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-surface-dark text-on-dark flex-col p-4 space-y-2 z-40 border-r border-[#2a2823]">
       {/* Brand Header */}
       <div className="flex items-center space-x-3 mb-6 mt-1 px-2">
-        <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-black text-xl shadow-xs">
+        <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-display font-semibold text-xl shadow-sm">
           B
         </div>
         <div>
-          <h1 className="text-xl font-black text-black leading-tight tracking-tight">Budget</h1>
-          <p className="text-xs text-[#444748]">Personal Finance</p>
+          <h1 className="text-xl font-bold text-on-dark leading-tight tracking-tight">Budget</h1>
+          <p className="text-xs text-on-dark-soft">Personal Finance</p>
         </div>
       </div>
 
@@ -30,7 +30,7 @@ export const Sidebar: React.FC = () => {
       <button
         id="sidebar-quick-add-btn"
         onClick={() => setQuickAddOpen(true)}
-        className="w-full bg-black text-white hover:bg-[#2e3132] active:scale-95 transition-all duration-150 rounded-lg py-2.5 px-4 mb-4 flex items-center justify-center space-x-2 font-medium text-sm shadow-xs cursor-pointer"
+        className="w-full bg-primary text-on-primary hover:bg-primary-active active:scale-95 transition-all duration-150 rounded-lg py-2.5 px-4 mb-4 flex items-center justify-center space-x-2 font-medium text-sm shadow-sm cursor-pointer"
       >
         <span className="material-symbols-outlined text-[18px]">add</span>
         <span>Quick Add</span>
@@ -47,8 +47,8 @@ export const Sidebar: React.FC = () => {
               onClick={() => setCurrentView(item.id)}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer active:scale-98 ${
                 isActive
-                  ? 'bg-black text-white shadow-xs'
-                  : 'text-[#444748] hover:bg-[#e1e3e4] hover:text-black'
+                  ? 'bg-primary text-on-primary shadow-sm'
+                  : 'text-on-dark-soft hover:bg-surface-dark-elevated hover:text-on-dark'
               }`}
             >
               <div className="flex items-center space-x-3">
@@ -65,8 +65,8 @@ export const Sidebar: React.FC = () => {
                 <span
                   className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                     isActive
-                      ? 'bg-white text-black'
-                      : 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]'
+                      ? 'bg-on-primary text-primary'
+                      : 'bg-warning/20 text-accent-amber'
                   }`}
                 >
                   {item.badge}
@@ -78,16 +78,16 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* Currency Switcher in Sidebar Footer */}
-      <div className="pt-3 border-t border-[#c4c7c7] mt-auto">
-        <div className="bg-[#e1e3e4] p-1 rounded-lg flex items-center justify-between text-xs">
-          <span className="text-[#444748] px-2 font-medium">Currency</span>
+      <div className="pt-3 border-t border-[#2a2823] mt-auto">
+        <div className="bg-surface-dark-elevated p-1 rounded-lg flex items-center justify-between text-xs">
+          <span className="text-on-dark-soft px-2 font-medium">Currency</span>
           <div className="flex space-x-1">
             <button
               onClick={() => setCurrency('USD')}
               className={`px-2 py-1 rounded font-medium transition-colors cursor-pointer ${
                 currency === 'USD'
-                  ? 'bg-black text-white'
-                  : 'text-[#444748] hover:text-black'
+                  ? 'bg-primary text-on-primary'
+                  : 'text-on-dark-soft hover:text-on-dark'
               }`}
             >
               $ USD
@@ -96,8 +96,8 @@ export const Sidebar: React.FC = () => {
               onClick={() => setCurrency('IDR')}
               className={`px-2 py-1 rounded font-medium transition-colors cursor-pointer ${
                 currency === 'IDR'
-                  ? 'bg-black text-white'
-                  : 'text-[#444748] hover:text-black'
+                  ? 'bg-primary text-on-primary'
+                  : 'text-on-dark-soft hover:text-on-dark'
               }`}
             >
               Rp IDR

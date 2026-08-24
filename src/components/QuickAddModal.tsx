@@ -63,32 +63,32 @@ export const QuickAddModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs animate-in fade-in duration-150">
       <div
-        className="bg-white w-full max-w-[480px] rounded-2xl border border-[#c4c7c7] p-6 md:p-8 flex flex-col gap-6 shadow-2xl relative animate-in zoom-in-95 duration-150"
+        className="bg-surface-soft w-full max-w-[480px] rounded-2xl border border-hairline p-6 md:p-8 flex flex-col gap-6 shadow-2xl relative animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center pb-2 border-b border-[#f3f4f5]">
-          <h2 className="text-xl font-bold text-black tracking-tight">Quick Add</h2>
+        <div className="flex justify-between items-center pb-2 border-b border-hairline">
+          <h2 className="font-display text-xl font-medium text-ink tracking-tight">Quick Add</h2>
           <button
             aria-label="Close"
             onClick={() => setQuickAddOpen(false)}
-            className="text-[#444748] hover:text-black transition-colors p-1.5 rounded-full hover:bg-[#f3f4f5] cursor-pointer"
+            className="text-muted hover:text-ink transition-colors p-1.5 rounded-full hover:bg-surface-card cursor-pointer"
           >
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>
 
         {/* Type selector toggle */}
-        <div className="flex bg-[#f3f4f5] rounded-lg p-1 border border-[#c4c7c7]">
+        <div className="flex bg-surface-card rounded-lg p-1 border border-hairline">
           <button
             type="button"
             onClick={() => setType('expense')}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
               type === 'expense'
-                ? 'bg-black text-white shadow-xs'
-                : 'text-[#444748] hover:text-black'
+                ? 'bg-ink text-on-dark shadow-sm'
+                : 'text-muted hover:text-ink'
             }`}
           >
             Expense
@@ -98,8 +98,8 @@ export const QuickAddModal: React.FC = () => {
             onClick={() => setType('income')}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
               type === 'income'
-                ? 'bg-black text-white shadow-xs'
-                : 'text-[#444748] hover:text-black'
+                ? 'bg-ink text-on-dark shadow-sm'
+                : 'text-muted hover:text-ink'
             }`}
           >
             Income
@@ -108,11 +108,11 @@ export const QuickAddModal: React.FC = () => {
 
         {/* Amount Input */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold text-[#444748] uppercase tracking-wider">
+          <label className="text-xs font-semibold text-muted uppercase tracking-wider">
             Amount
           </label>
-          <div className="flex items-baseline gap-2 border-b border-[#c4c7c7] focus-within:border-black pb-2 transition-colors">
-            <span className="text-3xl font-bold text-[#444748]">
+          <div className="flex items-baseline gap-2 border-b border-hairline focus-within:border-ink pb-2 transition-colors">
+            <span className="text-3xl font-medium text-muted">
               {currency === 'IDR' ? 'Rp' : '$'}
             </span>
             <input
@@ -122,7 +122,7 @@ export const QuickAddModal: React.FC = () => {
               value={amountStr}
               onChange={(e) => setAmountStr(e.target.value)}
               placeholder="0.00"
-              className="bg-transparent border-none p-0 focus:ring-0 text-3xl font-bold text-black w-full outline-none"
+              className="bg-transparent border-none p-0 focus:ring-0 font-display text-4xl font-semibold text-ink w-full outline-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSave();
               }}
@@ -132,7 +132,7 @@ export const QuickAddModal: React.FC = () => {
 
         {/* Quick-select Category Chips */}
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-semibold text-[#444748] uppercase tracking-wider">
+          <label className="text-xs font-semibold text-muted uppercase tracking-wider">
             Category
           </label>
           <div className="flex flex-wrap gap-2">
@@ -148,8 +148,8 @@ export const QuickAddModal: React.FC = () => {
                   }}
                   className={`px-3.5 py-2 rounded-full border text-sm font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
                     isSelected
-                      ? 'border-black bg-[#edeeef] border-2 text-black font-semibold shadow-xs'
-                      : 'border-[#c4c7c7] text-[#444748] hover:bg-[#f3f4f5] hover:text-black'
+                      ? 'border-ink bg-canvas text-ink font-semibold shadow-sm'
+                      : 'border-hairline text-body hover:bg-surface-card hover:text-ink'
                   }`}
                 >
                   <span className="material-symbols-outlined text-[16px]">{qc.icon}</span>
@@ -164,7 +164,7 @@ export const QuickAddModal: React.FC = () => {
             <select
               value={selectedCategoryId}
               onChange={(e) => setSelectedCategoryId(e.target.value)}
-              className="w-full text-xs font-medium bg-[#f8f9fa] border border-[#c4c7c7] rounded-lg p-2 text-[#191c1d] outline-none focus:border-black cursor-pointer"
+              className="w-full text-xs font-medium bg-canvas border border-hairline rounded-lg p-2 text-ink outline-none focus:border-ink cursor-pointer"
             >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -178,23 +178,23 @@ export const QuickAddModal: React.FC = () => {
         {/* Merchant & Optional Note */}
         <div className="flex flex-col gap-3">
           <div>
-            <label className="text-xs font-semibold text-[#444748]">Merchant / Description (Optional)</label>
+            <label className="text-xs font-semibold text-muted">Merchant / Description (Optional)</label>
             <input
               type="text"
               value={merchant}
               onChange={(e) => setMerchant(e.target.value)}
               placeholder="e.g. Starbucks, Uber, Minimarket"
-              className="w-full bg-[#f8f9fa] border border-[#c4c7c7] rounded-lg p-2 text-sm text-black placeholder:text-[#747878] focus:border-black outline-none mt-1"
+              className="w-full bg-canvas border border-hairline rounded-lg p-2 text-sm text-ink placeholder:text-muted-soft focus:border-ink outline-none mt-1"
             />
           </div>
 
           {/* Checkbox: Save as draft */}
-          <label className="flex items-center space-x-2 text-xs text-[#444748] cursor-pointer">
+          <label className="flex items-center space-x-2 text-xs text-body cursor-pointer">
             <input
               type="checkbox"
               checked={isDraft}
               onChange={(e) => setIsDraft(e.target.checked)}
-              className="rounded border-[#c4c7c7] text-black focus:ring-black cursor-pointer"
+              className="rounded border-hairline text-primary focus:ring-primary cursor-pointer"
             />
             <span>Mark as Incomplete Draft (review & finalize later)</span>
           </label>
@@ -204,7 +204,7 @@ export const QuickAddModal: React.FC = () => {
         <button
           type="button"
           onClick={() => handleSave()}
-          className="w-full bg-black text-white hover:bg-[#2e3132] font-semibold text-sm py-3.5 rounded-lg active:scale-98 transition-all cursor-pointer shadow-sm"
+          className="w-full bg-primary text-on-primary hover:bg-primary-active font-semibold text-sm py-3.5 rounded-lg active:scale-98 transition-all cursor-pointer shadow-sm"
         >
           Save Transaction
         </button>
