@@ -8,12 +8,11 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Stage 2: Build the Go backend (CGO enabled for the sqlite3 driver).
-FROM golang:1.22-alpine AS backend-builder
-RUN apk add --no-cache gcc musl-dev
+# Stage 2: Build the Go backend (pure-Go sqlite driver, no CGO needed).
+FROM golang:1.25-alpine AS backend-builder
 WORKDIR /app
 COPY backend/ ./
-RUN go mod tidy && CGO_ENABLED=1 GOOS=linux go build -o /app/server .
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o /app/server .
 
 # Stage 3: Runtime.
 FROM alpine:3.19
