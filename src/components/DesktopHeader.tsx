@@ -11,17 +11,15 @@ export const DesktopHeader: React.FC = () => {
     cycleDateRange,
     privacyMode,
     setPrivacyMode,
-    notifications,
-    markNotificationRead,
-    clearNotifications,
-    user,
+    settings,
     setQuickAddOpen,
+    logout,
+    draftCount,
+    unpaidRecurring,
   } = useBudget();
 
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const getPageTitle = (view: ViewType) => {
     switch (view) {
@@ -37,6 +35,18 @@ export const DesktopHeader: React.FC = () => {
         return 'Settings';
       default:
         return 'Budget';
+    }
+  };
+
+  const initials = settings.name.trim().slice(0, 1).toUpperCase() || 'U';
+  const alertCount = draftCount + unpaidRecurring.length;
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setLoggingOut(false);
     }
   };
 
@@ -100,62 +110,18 @@ export const DesktopHeader: React.FC = () => {
           </span>
         </button>
 
-        {/* Notifications */}
+        {/* Derived alerts */}
         <div className="relative">
           <button
-            id="notifications-btn"
-            onClick={() => setNotificationsOpen(!notificationsOpen)}
+            onClick={() => setCurrentView('transactions')}
             className="text-muted hover:text-ink p-1.5 rounded-full hover:bg-surface-soft transition-colors relative cursor-pointer"
+            title="Pending items"
           >
             <span className="material-symbols-outlined text-[22px]">notifications</span>
-            {unreadCount > 0 && (
+            {alertCount > 0 && (
               <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full ring-2 ring-canvas" />
             )}
           </button>
-
-          {/* Notifications Dropdown */}
-          {notificationsOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-surface-soft border border-hairline rounded-xl shadow-lg p-3 z-50 animate-in fade-in zoom-in-95 duration-100">
-              <div className="flex items-center justify-between pb-2 border-b border-hairline">
-                <span className="font-semibold text-sm">Notifications</span>
-                {notifications.length > 0 && (
-                  <button
-                    onClick={clearNotifications}
-                    className="text-xs text-muted hover:text-ink underline cursor-pointer"
-                  >
-                    Clear all
-                  </button>
-                )}
-              </div>
-              <div className="max-h-64 overflow-y-auto divide-y divide-hairline-soft py-1">
-                {notifications.length === 0 ? (
-                  <p className="text-xs text-muted py-4 text-center">No notifications</p>
-                ) : (
-                  notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      onClick={() => {
-                        markNotificationRead(n.id);
-                        if (n.actionUrl) {
-                          setCurrentView(n.actionUrl);
-                          setNotificationsOpen(false);
-                        }
-                      }}
-                      className={`p-2.5 text-xs rounded-lg transition-colors cursor-pointer ${
-                        !n.read ? 'bg-surface-card font-medium' : 'hover:bg-surface-card'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-ink">{n.title}</span>
-                        <span className="text-[10px] text-muted-soft">{n.date}</span>
-                      </div>
-                      <p className="text-body mt-1">{n.message}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Settings button */}
@@ -172,20 +138,16 @@ export const DesktopHeader: React.FC = () => {
         <div className="relative">
           <button
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            className="w-8 h-8 rounded-full overflow-hidden border border-hairline cursor-pointer hover:ring-2 hover:ring-primary transition-all flex-shrink-0"
+            className="w-8 h-8 rounded-full bg-surface-card border border-hairline text-body flex items-center justify-center font-semibold text-sm cursor-pointer hover:ring-2 hover:ring-primary transition-all flex-shrink-0"
           >
-            <img
-              src={user.avatarUrl}
-              alt={user.name}
-              className="w-full h-full object-cover"
-            />
+            {initials}
           </button>
 
           {profileMenuOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-surface-soft border border-hairline rounded-xl shadow-lg p-2 z-50">
               <div className="p-2 border-b border-hairline-soft">
-                <p className="font-semibold text-sm text-ink">{user.name}</p>
-                <p className="text-xs text-muted-soft truncate">{user.email}</p>
+                <p className="font-semibold text-sm text-ink">{settings.name || 'User'}</p>
+                <p className="text-xs text-muted-soft truncate">{settings.email || 'Local account'}</p>
               </div>
               <div className="py-1 space-y-1 text-xs">
                 <button
@@ -207,6 +169,14 @@ export const DesktopHeader: React.FC = () => {
                 >
                   <span className="material-symbols-outlined text-[16px]">add</span>
                   <span>Quick Add Transaction</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface-card text-error font-medium flex items-center space-x-2 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">logout</span>
+                  <span>{loggingOut ? 'Signing out…' : 'Sign out'}</span>
                 </button>
               </div>
             </div>

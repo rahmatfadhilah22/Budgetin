@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext';
+import { formatDate } from '../../date';
 
 export const DashboardView: React.FC = () => {
   const {
@@ -14,6 +15,9 @@ export const DashboardView: React.FC = () => {
     unpaidRecurring,
     logRecurringPayment,
   } = useBudget();
+
+  const [loggingId, setLoggingId] = useState<string | null>(null);
+  const [logError, setLogError] = useState<string | null>(null);
 
   // Calculate category spent amounts
   const categorySpending = categories.map((cat) => {
@@ -32,21 +36,11 @@ export const DashboardView: React.FC = () => {
       barColor = '#e8a55a'; // accent-amber
     }
 
-    return {
-      ...cat,
-      spent,
-      percent,
-      isOver,
-      barColor,
-    };
+    return { ...cat, spent, percent, isOver, barColor };
   }).filter((c) => c.type === 'expense');
 
-  // Top 5 recent completed transactions
-  const recentTransactions = transactions
-    .filter((t) => !t.isDraft)
-    .slice(0, 5);
+  const recentTransactions = transactions.filter((t) => !t.isDraft).slice(0, 5);
 
-  // Fallback icon resolver
   const getCategoryIcon = (categoryId?: string) => {
     const cat = categories.find((c) => c.id === categoryId);
     return cat ? cat.icon : 'receipt_long';
@@ -55,6 +49,19 @@ export const DashboardView: React.FC = () => {
   const getCategoryName = (categoryId?: string) => {
     const cat = categories.find((c) => c.id === categoryId);
     return cat ? cat.name : 'General';
+  };
+
+  const handleLog = async (id: string) => {
+    if (loggingId) return;
+    setLoggingId(id);
+    setLogError(null);
+    try {
+      await logRecurringPayment(id);
+    } catch (err) {
+      setLogError(err instanceof Error ? err.message : 'Could not log payment');
+    } finally {
+      setLoggingId(null);
+    }
   };
 
   return (
@@ -71,7 +78,7 @@ export const DashboardView: React.FC = () => {
                 You have {draftCount} unsaved drafts.
               </p>
               <p className="text-xs text-body hidden sm:block">
-                Incomplete transactions need your attention to maintain balanced budget limits.
+                Incomplete transactions need your attention to keep your budget accurate.
               </p>
             </div>
           </div>
@@ -84,50 +91,49 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
-      {/* 2. Recurring Unpaid Alert (if any pending) */}
+      {/* 2. Recurring Unpaid Alert */}
       {unpaidRecurring.length > 0 && (
         <div className="bg-warning/10 border border-warning/40 p-4 rounded-xl flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <span className="material-symbols-outlined text-[#b5790f] text-[20px]">
-              event_repeat
-            </span>
+            <span className="material-symbols-outlined text-[#b5790f] text-[20px]">event_repeat</span>
             <span className="text-sm font-medium text-body-strong">
-              {unpaidRecurring[0].name} {formatCurrency(unpaidRecurring[0].defaultAmount)} - paid yet?
+              {unpaidRecurring[0].name} {formatCurrency(unpaidRecurring[0].defaultAmount)} — paid yet?
             </span>
           </div>
           <button
-            onClick={() => logRecurringPayment(unpaidRecurring[0].id)}
-            className="bg-ink text-canvas hover:bg-body-strong text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+            onClick={() => handleLog(unpaidRecurring[0].id)}
+            disabled={loggingId === unpaidRecurring[0].id}
+            className="bg-ink text-canvas hover:bg-body-strong disabled:opacity-60 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
           >
-            Log it now
+            {loggingId === unpaidRecurring[0].id ? 'Logging…' : 'Log it now'}
           </button>
         </div>
       )}
 
-      {/* 3. Summary Cards Bento (Mobile Vertical Stack, Desktop 3-Column Grid) */}
+      {logError && (
+        <p role="alert" aria-live="polite" className="text-xs font-semibold text-error">
+          {logError}
+        </p>
+      )}
+
+      {/* 3. Summary Cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        {/* Income Card */}
         <div className="bg-surface-card p-6 rounded-2xl border border-hairline flex flex-col justify-between">
           <div>
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-              Income
-            </h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Income</h2>
             <div className="font-display text-3xl md:text-4xl font-semibold text-ink tracking-tight">
               {formatCurrency(totalIncome)}
             </div>
           </div>
           <div className="mt-4 flex items-center space-x-1.5 text-success">
             <span className="material-symbols-outlined text-sm">trending_up</span>
-            <span className="text-xs font-semibold">+5% this month</span>
+            <span className="text-xs font-semibold">This cycle</span>
           </div>
         </div>
 
-        {/* Expenses Card */}
         <div className="bg-surface-card p-6 rounded-2xl border border-hairline flex flex-col justify-between">
           <div>
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-              Expenses
-            </h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Expenses</h2>
             <div className="font-display text-3xl md:text-4xl font-semibold text-ink tracking-tight">
               {formatCurrency(totalExpenses)}
             </div>
@@ -138,12 +144,9 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        {/* Remaining Card — dark surface pacing moment */}
         <div className="bg-surface-dark text-on-dark p-6 rounded-2xl relative overflow-hidden flex flex-col justify-between">
           <div>
-            <h2 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">
-              Remaining
-            </h2>
+            <h2 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Remaining</h2>
             <div className="font-display text-3xl md:text-4xl font-semibold text-on-dark tracking-tight">
               {formatCurrency(remainingBalance)}
             </div>
@@ -153,11 +156,7 @@ export const DashboardView: React.FC = () => {
               <div
                 className="h-full bg-primary rounded-full transition-all duration-500"
                 style={{
-                  width: `${
-                    totalIncome > 0
-                      ? Math.min(Math.max((remainingBalance / totalIncome) * 100, 5), 100)
-                      : 50
-                  }%`,
+                  width: `${totalIncome > 0 ? Math.min(Math.max((remainingBalance / totalIncome) * 100, 5), 100) : 50}%`,
                 }}
               />
             </div>
@@ -165,9 +164,8 @@ export const DashboardView: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. Two-Column Layout (Categories Progress & Recent Transactions) */}
+      {/* 4. Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 pt-2">
-        {/* Category Budget Section (4 cols on lg) */}
         <section className="lg:col-span-5 space-y-5 bg-surface-card p-5 md:p-6 rounded-2xl border border-hairline">
           <div className="flex justify-between items-center pb-2 border-b border-hairline-soft">
             <h3 className="font-display text-xl font-medium text-ink tracking-tight">Categories</h3>
@@ -179,36 +177,33 @@ export const DashboardView: React.FC = () => {
             </button>
           </div>
 
-          <div className="space-y-4">
-            {categorySpending.slice(0, 4).map((cat) => (
-              <div key={cat.id} className="space-y-1.5">
-                <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center space-x-2">
-                    <span className="material-symbols-outlined text-[16px] text-muted">
-                      {cat.icon}
+          {categorySpending.length === 0 ? (
+            <p className="text-xs text-muted">Add expense categories with budgets to track them here.</p>
+          ) : (
+            <div className="space-y-4">
+              {categorySpending.slice(0, 4).map((cat) => (
+                <div key={cat.id} className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="flex items-center space-x-2">
+                      <span className="material-symbols-outlined text-[16px] text-muted">{cat.icon}</span>
+                      <span className="font-semibold text-body-strong">{cat.name}</span>
+                    </div>
+                    <span className="font-medium text-muted">
+                      {formatCurrency(cat.spent)} / {formatCurrency(cat.budget)}
                     </span>
-                    <span className="font-semibold text-body-strong">{cat.name}</span>
                   </div>
-                  <span className="font-medium text-muted">
-                    {formatCurrency(cat.spent)} / {formatCurrency(cat.budget)}
-                  </span>
+                  <div className="w-full h-1.5 bg-hairline rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{ width: `${cat.percent}%`, backgroundColor: cat.barColor }}
+                    />
+                  </div>
                 </div>
-                {/* 4px Progress Track */}
-                <div className="w-full h-1.5 bg-hairline rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{
-                      width: `${cat.percent}%`,
-                      backgroundColor: cat.barColor,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* Recent Transactions List (7 cols on lg) */}
         <section className="lg:col-span-7 bg-surface-card p-5 md:p-6 rounded-2xl border border-hairline flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-hairline-soft">
@@ -221,47 +216,40 @@ export const DashboardView: React.FC = () => {
               </button>
             </div>
 
-            <div className="divide-y divide-hairline-soft">
-              {recentTransactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  onClick={() => setCurrentView('transactions')}
-                  className="flex items-center justify-between py-3.5 group cursor-pointer hover:bg-canvas transition-colors -mx-2 px-2 rounded-lg"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-9 h-9 rounded-full bg-surface-soft flex items-center justify-center flex-shrink-0 text-body group-hover:bg-ink group-hover:text-canvas transition-colors">
-                      <span className="material-symbols-outlined text-[18px]">
-                        {getCategoryIcon(tx.categoryId)}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-body-strong leading-snug">
-                        {tx.merchant}
-                      </p>
-                      <div className="flex items-center space-x-1.5 text-xs text-muted mt-0.5">
-                        <span>{getCategoryName(tx.categoryId)}</span>
-                        <span>•</span>
-                        <span>{tx.date}</span>
-                        {tx.isRecurring && (
-                          <span className="text-[10px] px-1.5 py-0.2 bg-hairline text-muted rounded font-semibold">
-                            Recurring
-                          </span>
-                        )}
+            {recentTransactions.length === 0 ? (
+              <p className="text-xs text-muted py-6 text-center">No transactions yet — add your first one.</p>
+            ) : (
+              <div className="divide-y divide-hairline-soft">
+                {recentTransactions.map((tx) => (
+                  <div
+                    key={tx.id}
+                    onClick={() => setCurrentView('transactions')}
+                    className="flex items-center justify-between py-3.5 group cursor-pointer hover:bg-canvas transition-colors -mx-2 px-2 rounded-lg"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-full bg-surface-soft flex items-center justify-center flex-shrink-0 text-body group-hover:bg-ink group-hover:text-canvas transition-colors">
+                        <span className="material-symbols-outlined text-[18px]">{getCategoryIcon(tx.categoryId)}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-body-strong leading-snug">{tx.merchant}</p>
+                        <div className="flex items-center space-x-1.5 text-xs text-muted mt-0.5">
+                          <span>{getCategoryName(tx.categoryId)}</span>
+                          <span>•</span>
+                          <span>{formatDate(tx.date)}</span>
+                          {tx.isRecurring && (
+                            <span className="text-[10px] px-1.5 py-0.2 bg-hairline text-muted rounded font-semibold">Recurring</span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <span className={`text-sm font-bold tracking-tight ${tx.type === 'income' ? 'text-success' : 'text-ink'}`}>
+                      {tx.type === 'income' ? '+' : '-'}
+                      {formatCurrency(tx.amount)}
+                    </span>
                   </div>
-
-                  <span
-                    className={`text-sm font-bold tracking-tight ${
-                      tx.type === 'income' ? 'text-success' : 'text-ink'
-                    }`}
-                  >
-                    {tx.type === 'income' ? '+' : '-'}
-                    {formatCurrency(tx.amount)}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="pt-4 border-t border-hairline-soft mt-4 flex justify-end">

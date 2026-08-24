@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   budget-app:
     build:
@@ -11,9 +9,19 @@ services:
     environment:
       - PORT=8080
       - SQLITE_DB_PATH=/app/data/budget.db
+      # Required — the app refuses to start without it.
+      - APP_PASSWORD=${APP_PASSWORD:?APP_PASSWORD must be set in .env}
+      # Set APP_ENV=production when serving behind HTTPS (sets Secure cookie).
+      - APP_ENV=${APP_ENV:-}
     volumes:
       - budget-data:/app/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
 
 volumes:
   budget-data:

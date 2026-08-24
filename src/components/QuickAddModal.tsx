@@ -1,65 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { useBudget } from '../context/BudgetContext';
 
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
 export const QuickAddModal: React.FC = () => {
   const {
     quickAddOpen,
     setQuickAddOpen,
     categories,
     addTransaction,
-    currency,
   } = useBudget();
 
   const [amountStr, setAmountStr] = useState<string>('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('coffee');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [merchant, setMerchant] = useState<string>('');
   const [note, setNote] = useState<string>('');
+  const [date, setDate] = useState<string>(todayISO());
   const [isDraft, setIsDraft] = useState<boolean>(false);
   const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Quick categories list with standard shortcuts
-  const quickCategories = [
-    { id: 'coffee', label: 'Coffee', icon: 'local_cafe', defaultMerchant: 'Coffee' },
-    { id: 'food_dining', label: 'Lunch', icon: 'restaurant', defaultMerchant: 'Lunch' },
-    { id: 'transport', label: 'Transport', icon: 'directions_subway', defaultMerchant: 'Transport' },
-    { id: 'groceries', label: 'Groceries', icon: 'shopping_cart', defaultMerchant: 'Groceries' },
-  ];
+  const expenseCategories = categories.filter((c) => c.type === 'expense');
 
+  // Reset when opening and when the category list arrives after boot.
   useEffect(() => {
     if (quickAddOpen) {
       setAmountStr('');
       setMerchant('');
       setNote('');
+      setDate(todayISO());
       setIsDraft(false);
       setType('expense');
-      setSelectedCategoryId('coffee');
+      setError(null);
+      setSelectedCategoryId(expenseCategories[0]?.id ?? '');
     }
-  }, [quickAddOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quickAddOpen, categories]);
 
   if (!quickAddOpen) return null;
 
-  const handleSave = (e?: React.FormEvent) => {
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const parsedAmount = parseFloat(amountStr) || 0;
+    if (submitting) return;
+    const parsedAmount = Math.round(parseFloat(amountStr) || 0);
     if (parsedAmount <= 0 && !isDraft) {
-      alert('Please enter a valid amount greater than 0');
+      setError('Please enter an amount greater than 0.');
       return;
     }
-
-    const catObj = categories.find((c) => c.id === selectedCategoryId);
-    const resolvedMerchant = merchant.trim() || (catObj ? catObj.name : 'Unknown Merchant');
-
-    addTransaction({
-      merchant: resolvedMerchant,
-      amount: parsedAmount,
-      categoryId: selectedCategoryId || undefined,
-      date: 'Today',
-      type: type,
-      isDraft: isDraft,
-      note: note.trim() || undefined,
-    });
-
-    setQuickAddOpen(false);
+    setSubmitting(true);
+    setError(null);
+    try {
+      await addTransaction({
+        merchant: merchant.trim() || 'Unknown Merchant',
+        amount: parsedAmount,
+        categoryId: selectedCategoryId || undefined,
+        date,
+        type,
+        isDraft,
+        note: note.trim() || undefined,
+      });
+      setQuickAddOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save transaction');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -109,19 +115,19 @@ export const QuickAddModal: React.FC = () => {
         {/* Amount Input */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold text-muted uppercase tracking-wider">
-            Amount
+            Amount (Rp)
           </label>
           <div className="flex items-baseline gap-2 border-b border-hairline focus-within:border-ink pb-2 transition-colors">
-            <span className="text-3xl font-medium text-muted">
-              {currency === 'IDR' ? 'Rp' : '$'}
-            </span>
+            <span className="text-3xl font-medium text-muted">Rp</span>
             <input
               autoFocus
               type="number"
-              step="0.01"
+              inputMode="numeric"
+              step="1"
+              min="1"
               value={amountStr}
               onChange={(e) => setAmountStr(e.target.value)}
-              placeholder="0.00"
+              placeholder="0"
               className="bg-transparent border-none p-0 focus:ring-0 font-display text-4xl font-semibold text-ink w-full outline-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSave();
@@ -130,62 +136,52 @@ export const QuickAddModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick-select Category Chips */}
+        {/* Category selector */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold text-muted uppercase tracking-wider">
             Category
           </label>
-          <div className="flex flex-wrap gap-2">
-            {quickCategories.map((qc) => {
-              const isSelected = selectedCategoryId === qc.id;
-              return (
-                <button
-                  key={qc.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedCategoryId(qc.id);
-                    if (!merchant) setMerchant(qc.defaultMerchant);
-                  }}
-                  className={`px-3.5 py-2 rounded-full border text-sm font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
-                    isSelected
-                      ? 'border-ink bg-canvas text-ink font-semibold shadow-sm'
-                      : 'border-hairline text-body hover:bg-surface-card hover:text-ink'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">{qc.icon}</span>
-                  <span>{qc.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* More categories dropdown if user wants specific category */}
-          <div className="mt-1">
+          {expenseCategories.length === 0 && type === 'expense' ? (
+            <p className="text-xs text-muted">
+              No expense categories yet — add one in Categories first.
+            </p>
+          ) : (
             <select
               value={selectedCategoryId}
               onChange={(e) => setSelectedCategoryId(e.target.value)}
               className="w-full text-xs font-medium bg-canvas border border-hairline rounded-lg p-2 text-ink outline-none focus:border-ink cursor-pointer"
             >
-              {categories.map((c) => (
+              {(type === 'expense' ? expenseCategories : categories.filter((c) => c.type === 'income')).map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} ({c.type})
+                  {c.name}
                 </option>
               ))}
             </select>
-          </div>
+          )}
         </div>
 
-        {/* Merchant & Optional Note */}
+        {/* Merchant, Date & Note */}
         <div className="flex flex-col gap-3">
-          <div>
-            <label className="text-xs font-semibold text-muted">Merchant / Description (Optional)</label>
-            <input
-              type="text"
-              value={merchant}
-              onChange={(e) => setMerchant(e.target.value)}
-              placeholder="e.g. Starbucks, Uber, Minimarket"
-              className="w-full bg-canvas border border-hairline rounded-lg p-2 text-sm text-ink placeholder:text-muted-soft focus:border-ink outline-none mt-1"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="text-xs font-semibold text-muted">Merchant / Description</label>
+              <input
+                type="text"
+                value={merchant}
+                onChange={(e) => setMerchant(e.target.value)}
+                placeholder="e.g. Minimarket, Transport"
+                className="w-full bg-canvas border border-hairline rounded-lg p-2 text-sm text-ink placeholder:text-muted-soft focus:border-ink outline-none mt-1"
+              />
+            </div>
+            <div className="col-span-1">
+              <label className="text-xs font-semibold text-muted">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full bg-canvas border border-hairline rounded-lg p-2 text-sm text-ink focus:border-ink outline-none mt-1"
+              />
+            </div>
           </div>
 
           {/* Checkbox: Save as draft */}
@@ -196,17 +192,28 @@ export const QuickAddModal: React.FC = () => {
               onChange={(e) => setIsDraft(e.target.checked)}
               className="rounded border-hairline text-primary focus:ring-primary cursor-pointer"
             />
-            <span>Mark as Incomplete Draft (review & finalize later)</span>
+            <span>Save as Incomplete Draft (categorize later)</span>
           </label>
         </div>
+
+        {error && (
+          <p role="alert" aria-live="polite" className="text-xs font-semibold text-error">
+            {error}
+          </p>
+        )}
 
         {/* Action Button */}
         <button
           type="button"
           onClick={() => handleSave()}
-          className="w-full bg-primary text-on-primary hover:bg-primary-active font-semibold text-sm py-3.5 rounded-lg active:scale-98 transition-all cursor-pointer shadow-sm"
+          disabled={submitting}
+          className={`w-full font-semibold text-sm py-3.5 rounded-lg transition-all cursor-pointer shadow-sm ${
+            submitting
+              ? 'bg-primary-disabled text-muted cursor-not-allowed'
+              : 'bg-primary text-on-primary hover:bg-primary-active active:scale-98'
+          }`}
         >
-          Save Transaction
+          {submitting ? 'Saving…' : 'Save Transaction'}
         </button>
       </div>
     </div>

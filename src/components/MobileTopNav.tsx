@@ -3,14 +3,7 @@ import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
 export const MobileTopNav: React.FC = () => {
-  const {
-    currentView,
-    setCurrentView,
-    privacyMode,
-    setPrivacyMode,
-    draftCount,
-    user,
-  } = useBudget();
+  const { currentView, setCurrentView, privacyMode, setPrivacyMode, draftCount, settings } = useBudget();
 
   const tabs: { id: ViewType; label: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -40,7 +33,7 @@ export const MobileTopNav: React.FC = () => {
             </span>
           </button>
 
-          {/* Notifications button */}
+          {/* Alerts button */}
           <button
             onClick={() => setCurrentView('transactions')}
             aria-label="Notifications"
@@ -55,13 +48,9 @@ export const MobileTopNav: React.FC = () => {
           {/* User Avatar */}
           <button
             onClick={() => setCurrentView('settings')}
-            className="w-8 h-8 rounded-full overflow-hidden bg-surface-card border border-hairline flex-shrink-0 cursor-pointer"
+            className="w-8 h-8 rounded-full bg-surface-card border border-hairline text-body flex items-center justify-center font-semibold text-sm flex-shrink-0 cursor-pointer"
           >
-            <img
-              src={user.avatarUrl}
-              alt="User profile"
-              className="w-full h-full object-cover"
-            />
+            {settings.name.trim().slice(0, 1).toUpperCase() || 'U'}
           </button>
         </div>
       </div>

@@ -3,7 +3,7 @@ import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
 export const Sidebar: React.FC = () => {
-  const { currentView, setCurrentView, setQuickAddOpen, draftCount, unpaidRecurring, currency, setCurrency } = useBudget();
+  const { currentView, setCurrentView, setQuickAddOpen, draftCount, unpaidRecurring, settings } = useBudget();
 
   const navItems: { id: ViewType; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -12,6 +12,8 @@ export const Sidebar: React.FC = () => {
     { id: 'recurring', label: 'Recurring', icon: 'event_repeat', badge: unpaidRecurring.length },
     { id: 'settings', label: 'Settings', icon: 'settings' },
   ];
+
+  const initials = settings.name.trim().slice(0, 1).toUpperCase() || 'U';
 
   return (
     <aside className="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-surface-dark text-on-dark flex-col p-4 space-y-2 z-40 border-r border-[#2a2823]">
@@ -77,31 +79,15 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Currency Switcher in Sidebar Footer */}
+      {/* User footer */}
       <div className="pt-3 border-t border-[#2a2823] mt-auto">
-        <div className="bg-surface-dark-elevated p-1 rounded-lg flex items-center justify-between text-xs">
-          <span className="text-on-dark-soft px-2 font-medium">Currency</span>
-          <div className="flex space-x-1">
-            <button
-              onClick={() => setCurrency('USD')}
-              className={`px-2 py-1 rounded font-medium transition-colors cursor-pointer ${
-                currency === 'USD'
-                  ? 'bg-primary text-on-primary'
-                  : 'text-on-dark-soft hover:text-on-dark'
-              }`}
-            >
-              $ USD
-            </button>
-            <button
-              onClick={() => setCurrency('IDR')}
-              className={`px-2 py-1 rounded font-medium transition-colors cursor-pointer ${
-                currency === 'IDR'
-                  ? 'bg-primary text-on-primary'
-                  : 'text-on-dark-soft hover:text-on-dark'
-              }`}
-            >
-              Rp IDR
-            </button>
+        <div className="flex items-center space-x-3 px-2">
+          <div className="w-8 h-8 rounded-full bg-surface-dark-elevated text-on-dark flex items-center justify-center font-semibold text-sm flex-shrink-0">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-on-dark truncate">{settings.name || 'User'}</p>
+            <p className="text-[11px] text-on-dark-soft truncate">{settings.email || 'Local account'}</p>
           </div>
         </div>
       </div>
