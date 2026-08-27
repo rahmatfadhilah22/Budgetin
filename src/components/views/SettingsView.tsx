@@ -6,6 +6,7 @@ export const SettingsView: React.FC = () => {
   const {
     settings,
     updateSettings,
+    changePassword,
     setPeriod,
     period,
     cycleDateRange,
@@ -18,6 +19,13 @@ export const SettingsView: React.FC = () => {
   const [emailInput, setEmailInput] = useState(settings.email);
   const [savingProfile, setSavingProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [pwdOpen, setPwdOpen] = useState(false);
+  const [currentPwd, setCurrentPwd] = useState('');
+  const [nextPwd, setNextPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [savingPwd, setSavingPwd] = useState(false);
+  const [pwdSuccess, setPwdSuccess] = useState(false);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +48,33 @@ export const SettingsView: React.FC = () => {
       await updateSettings({ notificationsEnabled: enabled });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update setting');
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (savingPwd) return;
+    setError(null);
+    setPwdSuccess(false);
+    if (nextPwd.length < 8) {
+      setError('New password must be at least 8 characters.');
+      return;
+    }
+    if (nextPwd !== confirmPwd) {
+      setError('New password and confirmation do not match.');
+      return;
+    }
+    setSavingPwd(true);
+    try {
+      await changePassword(currentPwd, nextPwd);
+      setCurrentPwd('');
+      setNextPwd('');
+      setConfirmPwd('');
+      setPwdSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not change password');
+    } finally {
+      setSavingPwd(false);
     }
   };
 
@@ -148,6 +183,28 @@ export const SettingsView: React.FC = () => {
         </div>
       </section>
 
+      {/* SECURITY SECTION */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">Security</h3>
+        <div className="bg-surface-card border border-hairline rounded-xl overflow-hidden divide-y divide-hairline-soft">
+          <div
+            onClick={() => { setPwdOpen(true); setPwdSuccess(false); setError(null); }}
+            className="flex items-center justify-between p-4 hover:bg-canvas transition-colors cursor-pointer group"
+          >
+            <div className="flex items-center space-x-3.5">
+              <div className="w-9 h-9 rounded-full bg-surface-soft text-body flex items-center justify-center group-hover:bg-ink group-hover:text-canvas transition-colors">
+                <span className="material-symbols-outlined text-[20px]">key</span>
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-body-strong block">Change Password</span>
+                <span className="text-xs text-muted-soft">Update your app login password</span>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-muted-soft">chevron_right</span>
+          </div>
+        </div>
+      </section>
+
       {/* DATA MANAGEMENT SECTION */}
       <section className="space-y-3">
         <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">Data Management</h3>
@@ -214,6 +271,75 @@ export const SettingsView: React.FC = () => {
                 }`}
               >
                 {savingProfile ? 'Saving…' : 'Save Profile'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {pwdOpen && (
+        <div
+          className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setPwdOpen(false)}
+        >
+          <div
+            className="bg-surface-soft w-full max-w-[420px] rounded-2xl border border-hairline p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center pb-2 border-b border-hairline">
+              <h3 className="font-display text-lg font-medium text-ink">Change Password</h3>
+              <button onClick={() => setPwdOpen(false)} className="text-muted-soft hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
+                <span className="material-symbols-outlined text-[22px]">close</span>
+              </button>
+            </div>
+
+            {pwdSuccess && (
+              <p className="text-xs font-semibold text-success bg-success/10 border border-success/30 px-3 py-2 rounded-lg">
+                Password changed successfully.
+              </p>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-4 text-xs">
+              <div>
+                <label className="font-semibold text-muted block mb-1">Current Password</label>
+                <input
+                  type="password"
+                  value={currentPwd}
+                  onChange={(e) => setCurrentPwd(e.target.value)}
+                  autoComplete="current-password"
+                  className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-medium text-ink focus:border-ink outline-none"
+                />
+              </div>
+              <div>
+                <label className="font-semibold text-muted block mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={nextPwd}
+                  onChange={(e) => setNextPwd(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-medium text-ink focus:border-ink outline-none"
+                />
+                <p className="text-[10px] text-muted-soft mt-1">At least 8 characters.</p>
+              </div>
+              <div>
+                <label className="font-semibold text-muted block mb-1">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-medium text-ink focus:border-ink outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={savingPwd}
+                className={`w-full py-2.5 rounded-lg font-semibold cursor-pointer mt-2 ${
+                  savingPwd ? 'bg-primary-disabled text-muted' : 'bg-primary text-on-primary hover:bg-primary-active'
+                }`}
+              >
+                {savingPwd ? 'Saving…' : 'Change Password'}
               </button>
             </form>
           </div>

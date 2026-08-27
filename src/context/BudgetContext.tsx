@@ -81,6 +81,7 @@ interface BudgetContextType {
   syncRecurring: (id: string) => Promise<Transaction[]>;
 
   updateSettings: (updates: Partial<Settings>) => Promise<void>;
+  changePassword: (current: string, next: string) => Promise<void>;
 
   // Data management (client-side from current snapshot)
   exportCSV: () => void;
@@ -248,6 +249,13 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     await api<Settings>('/api/settings', { method: 'PUT', body: JSON.stringify(next) });
     setData((prev) => ({ ...prev, settings: next }));
   }, [data.settings]);
+
+  const changePassword = useCallback(async (current: string, next: string) => {
+    await api<{ changed: boolean }>('/api/settings/password', {
+      method: 'POST',
+      body: JSON.stringify({ current, next }),
+    });
+  }, []);
 
   const formatCurrency = useCallback(
     (amount: number) =>
@@ -445,6 +453,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         logRecurringPayment,
         syncRecurring,
         updateSettings,
+        changePassword,
         exportCSV,
         exportJSON,
       }}

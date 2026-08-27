@@ -18,6 +18,7 @@ const maxJSONBody = 1 << 20
 type app struct {
 	db           *sql.DB
 	passwordHash [32]byte
+	passwords    *passwordStore
 	sessions     *sessionStore
 	secureCookie bool
 	distDir      string
@@ -28,6 +29,7 @@ func newApp(db *sql.DB, password string, secureCookie bool, distDir string) *app
 	a := &app{
 		db:           db,
 		passwordHash: sha256.Sum256([]byte(password)),
+		passwords:    &passwordStore{db: db},
 		sessions:     newSessionStore(),
 		secureCookie: secureCookie,
 		distDir:      distDir,
@@ -53,6 +55,7 @@ func newApp(db *sql.DB, password string, secureCookie bool, distDir string) *app
 	protected.HandleFunc("POST /api/recurring/{id}/log", a.logRecurring)
 	protected.HandleFunc("POST /api/recurring/{id}/sync", a.syncRecurring)
 	protected.HandleFunc("PUT /api/settings", a.updateSettings)
+	protected.HandleFunc("POST /api/settings/password", a.changePassword)
 
 	a.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/health" || r.URL.Path == "/api/session" || r.URL.Path == "/api/login" {
@@ -112,7 +115,7 @@ func (a *app) login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if !passwordMatches(a.passwordHash, body.Password) {
+	if !a.passwords.matches(a.passwordHash, body.Password) {
 		time.Sleep(150 * time.Millisecond)
 		writeError(w, http.StatusUnauthorized, "invalid password")
 		return

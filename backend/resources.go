@@ -474,6 +474,42 @@ func (a *app) transactionsForTemplate(id string) ([]Transaction, error) {
 	return out, rows.Err()
 }
 
+// changePassword replaces the login password. Must supply the current password;
+// requires ≥ 8 chars. Other sessions are invalidated, the caller stays logged in.
+func (a *app) changePassword(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Current string `json:"current"`
+		Next    string `json:"next"`
+	}
+	if err := decodeJSON(w, r, &body); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !a.passwords.matches(a.passwordHash, body.Current) {
+		writeError(w, http.StatusUnauthorized, "current password is incorrect")
+		return
+	}
+	if len(body.Next) < 8 {
+		writeError(w, http.StatusBadRequest, "new password must be at least 8 characters")
+		return
+	}
+	if body.Next == body.Current {
+		writeError(w, http.StatusBadRequest, "new password must be different from the current one")
+		return
+	}
+	if err := a.passwords.set(body.Next); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not update password")
+		return
+	}
+	// Invalidate every session except the caller's own cookie.
+	current := ""
+	if cookie, err := r.Cookie(sessionCookie); err == nil {
+		current = cookie.Value
+	}
+	a.sessions.clearExcept(current)
+	writeJSON(w, http.StatusOK, map[string]bool{"changed": true})
+}
+
 func (a *app) updateSettings(w http.ResponseWriter, r *http.Request) {
 	var settings Settings
 	if err := decodeJSON(w, r, &settings); err != nil {

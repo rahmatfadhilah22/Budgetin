@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"net/http"
@@ -78,9 +79,60 @@ func (s *sessionStore) delete(token string) {
 	s.mu.Unlock()
 }
 
+// clearExcept removes all sessions except the given token (used on password change).
+func (s *sessionStore) clearExcept(token string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for key := range s.sessions {
+		if key != tokenHash(token) {
+			delete(s.sessions, key)
+		}
+	}
+}
+
 func passwordMatches(expected [32]byte, password string) bool {
 	actual := sha256.Sum256([]byte(password))
 	return subtle.ConstantTimeCompare(expected[:], actual[:]) == 1
+}
+
+func hashPassword(password string) string {
+	sum := sha256.Sum256([]byte(password))
+	return hex.EncodeToString(sum[:])
+}
+
+// Passwords live in the DB after the first change; until then the env password
+// (initial password) is used. Env value is stored on the struct (not a field we
+// read from the DB fallback) so it stays in-memory like today.
+type passwordStore struct {
+	db *sql.DB
+}
+
+// get returns the stored hash if a row exists; ok=false means "no password set yet".
+func (s *passwordStore) get() (string, bool) {
+	var h string
+	err := s.db.QueryRow("SELECT hash FROM password_hash WHERE id=1").Scan(&h)
+	return h, err == nil
+}
+
+// has reports whether the password has been changed from the initial one.
+func (s *passwordStore) has() bool { _, ok := s.get(); return ok }
+
+// matches compares against the DB-stored password when set, else env password.
+func (s *passwordStore) matches(initial [32]byte, password string) bool {
+	if stored, ok := s.get(); ok {
+		return stored == hashPassword(password)
+	}
+	return passwordMatches(initial, password)
+}
+
+// set stores a new password hash (used by the change-password endpoint).
+func (s *passwordStore) set(password string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO password_hash(id, hash) VALUES(1, ?)
+		 ON CONFLICT(id) DO UPDATE SET hash=excluded.hash`,
+		hashPassword(password),
+	)
+	return err
 }
 
 func setSessionCookie(w http.ResponseWriter, token string, secure bool, maxAge int) {

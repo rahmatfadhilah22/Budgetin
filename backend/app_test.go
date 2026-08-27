@@ -86,7 +86,7 @@ func TestFreshDatabaseIsEmptyAndMigrationIsIdempotent(t *testing.T) {
 	if err := db.QueryRow("SELECT COUNT(*) FROM categories").Scan(&categories); err != nil {
 		t.Fatal(err)
 	}
-	if version != 2 || categories != 0 {
+	if version != 3 || categories != 0 {
 		t.Fatalf("version=%d categories=%d", version, categories)
 	}
 	if _, err := db.Exec("INSERT INTO categories(id,name,type,budget,icon) VALUES('bad','Bad','expense',-1,'x')"); err == nil {
@@ -198,6 +198,53 @@ func TestValidationRejectsInvalidMoneyAndUnknownFields(t *testing.T) {
 	resp = request(t, client, http.MethodPost, server.URL+"/api/categories", map[string]any{"name": "Bad", "type": "expense", "budget": 1, "icon": "x", "unknown": true})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("unknown field status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+func TestChangePassword(t *testing.T) {
+	server, client := newTestServer(t, false)
+	login(t, client, server.URL) // logs in with the env (initial) password
+
+	// Wrong current password is rejected.
+	resp := request(t, client, http.MethodPost, server.URL+"/api/settings/password", map[string]string{"current": "nope", "next": "newpass123"})
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("wrong current status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Too-short new password is rejected.
+	resp = request(t, client, http.MethodPost, server.URL+"/api/settings/password", map[string]string{"current": testPassword, "next": "short"})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("short next status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Success: change from env password to the new one.
+	resp = request(t, client, http.MethodPost, server.URL+"/api/settings/password", map[string]string{"current": testPassword, "next": "newpass123"})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("change status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Caller is still authenticated (session preserved).
+	resp = request(t, client, http.MethodGet, server.URL+"/api/session", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("caller session after change status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Old (env) password no longer works.
+	resp = request(t, client, http.MethodPost, server.URL+"/api/login", map[string]string{"password": testPassword})
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("old password accepted status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// New password works.
+	resp = request(t, client, http.MethodPost, server.URL+"/api/login", map[string]string{"password": "newpass123"})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("new password rejected status=%d", resp.StatusCode)
 	}
 	resp.Body.Close()
 }

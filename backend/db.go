@@ -41,6 +41,12 @@ func migrate(db *sql.DB) error {
 		}
 		version = 2
 	}
+	if version < 3 {
+		if err := migrateV3(db); err != nil {
+			return err
+		}
+		version = 3
+	}
 	return nil
 }
 
@@ -117,6 +123,27 @@ func migrateV2(db *sql.DB) error {
 		return err
 	}
 	if _, err := tx.Exec("PRAGMA user_version = 2"); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// v3: user-changeable password. A row exists only after the user changes it from
+// the app — until then login falls back to the APP_PASSWORD env var (initial password).
+func migrateV3(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(`CREATE TABLE IF NOT EXISTS password_hash (
+		id INTEGER PRIMARY KEY CHECK(id = 1),
+		hash TEXT NOT NULL
+	)`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("PRAGMA user_version = 3"); err != nil {
 		return err
 	}
 	return tx.Commit()
