@@ -41,21 +41,27 @@ Backend dan frontend dijalankan sebagai dua proses; Vite men-proxy `/api` ke bac
 
 ### 1. Siapkan password
 
-Password dibaca dari environment variable `APP_PASSWORD` (minimum 12 karakter). Server **menolak start** jika tidak ada.
+Password dibaca dari `APP_PASSWORD` (minimum 12 karakter). Server **menolak start** jika tidak ada.
 
-PowerShell (Windows):
+Cara termudah — buat file `.env` di **root project** (dipakai baik oleh `go run` maupun Docker Compose):
+
+```
+APP_PASSWORD=ganti-dengan-password-kuat
+```
+
+`.env` tidak ikut di-commit (sudah di `.gitignore`). Alternatif, set sebagai environment variable sungguhan:
 
 ```powershell
+# PowerShell (Windows)
 $env:APP_PASSWORD = "ganti-dengan-password-kuat"
 ```
 
-Bash / zsh / macOS / Linux:
-
 ```bash
+# Bash / zsh / macOS / Linux
 export APP_PASSWORD="ganti-dengan-password-kuat"
 ```
 
-> Tips: simpan di `.env` hanya untuk Docker (lihat di bawah). Untuk `go run`, set env per terminal.
+> Backend membaca `.env` otomatis (di folder berjalan atau folder induk), jadi `go run .` dari `backend/` ikut terbaca. Env var sungguhan tetap menang atas `.env`.
 
 ### 2. Jalankan backend (port 8080)
 
@@ -86,7 +92,7 @@ Backend di image sudah menyertakan hasil build React — satu container melayani
 
 ### 1. Buat file `.env` di root project
 
-`.env` tidak ikut di-commit (sudah di `.gitignore`).
+Sama seperti di atas (dipakai untuk `go run` dan Compose).
 
 ```
 APP_PASSWORD=ganti-dengan-password-kuat
