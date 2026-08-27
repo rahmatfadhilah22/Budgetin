@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext';
 import { Transaction } from '../../types';
 import { formatDate } from '../../date';
+import { Select } from '../controls';
 
 export const TransactionsView: React.FC = () => {
   const {
@@ -295,26 +296,26 @@ export const TransactionsView: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-2 w-full md:w-auto overflow-x-auto no-scrollbar pb-1 md:pb-0">
-              <select
+              <Select
+                variant="sm"
                 value={selectedCategoryFilter}
-                onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                className="text-xs bg-canvas border border-hairline rounded-lg px-2.5 py-2 font-medium text-ink outline-none cursor-pointer"
-              >
-                <option value="all">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                onChange={setSelectedCategoryFilter}
+                options={[
+                  { value: 'all', label: 'All Categories' },
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+              />
 
-              <select
+              <Select
+                variant="sm"
                 value={selectedTypeFilter}
-                onChange={(e) => setSelectedTypeFilter(e.target.value as 'all' | 'expense' | 'income')}
-                className="text-xs bg-canvas border border-hairline rounded-lg px-2.5 py-2 font-medium text-ink outline-none cursor-pointer"
-              >
-                <option value="all">All Types</option>
-                <option value="expense">Expenses only</option>
-                <option value="income">Income only</option>
-              </select>
+                onChange={(v) => setSelectedTypeFilter(v as 'all' | 'expense' | 'income')}
+                options={[
+                  { value: 'all', label: 'All Types' },
+                  { value: 'expense', label: 'Expenses only' },
+                  { value: 'income', label: 'Income only' },
+                ]}
+              />
 
               <button
                 onClick={() => setQuickAddOpen(true)}

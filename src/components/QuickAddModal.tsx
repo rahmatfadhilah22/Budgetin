@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBudget } from '../context/BudgetContext';
+import { Checkbox, Select } from './controls';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -146,17 +147,15 @@ export const QuickAddModal: React.FC = () => {
               No expense categories yet — add one in Categories first.
             </p>
           ) : (
-            <select
+            <Select
+              className="w-full"
               value={selectedCategoryId}
-              onChange={(e) => setSelectedCategoryId(e.target.value)}
-              className="w-full text-xs font-medium bg-canvas border border-hairline rounded-lg p-2 text-ink outline-none focus:border-ink cursor-pointer"
-            >
-              {(type === 'expense' ? expenseCategories : categories.filter((c) => c.type === 'income')).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedCategoryId}
+              options={(type === 'expense' ? expenseCategories : categories.filter((c) => c.type === 'income')).map((c) => ({
+                value: c.id,
+                label: c.name,
+              }))}
+            />
           )}
         </div>
 
@@ -185,15 +184,7 @@ export const QuickAddModal: React.FC = () => {
           </div>
 
           {/* Checkbox: Save as draft */}
-          <label className="flex items-center space-x-2 text-xs text-body cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isDraft}
-              onChange={(e) => setIsDraft(e.target.checked)}
-              className="rounded border-hairline text-primary focus:ring-primary cursor-pointer"
-            />
-            <span>Save as Incomplete Draft (categorize later)</span>
-          </label>
+          <Checkbox checked={isDraft} onChange={setIsDraft} label="Save as Incomplete Draft (categorize later)" />
         </div>
 
         {error && (

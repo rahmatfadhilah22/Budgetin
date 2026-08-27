@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext';
 import { RecurringTemplate } from '../../types';
+import { Select } from '../controls';
 
 export const RecurringView: React.FC = () => {
   const {
@@ -265,16 +266,16 @@ export const RecurringView: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Category</label>
-                <select
+                <Select
+                  className="w-full"
                   value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-medium text-ink focus:border-ink outline-none cursor-pointer"
-                >
-                  {expenseCategories.length === 0 && <option value="">No expense categories yet</option>}
-                  {expenseCategories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                  onChange={setCategoryId}
+                  options={
+                    expenseCategories.length === 0
+                      ? [{ value: '', label: 'No expense categories yet' }]
+                      : expenseCategories.map((c) => ({ value: c.id, label: c.name }))
+                  }
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -308,15 +309,16 @@ export const RecurringView: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Frequency</label>
-                <select
+                <Select
+                  className="w-full"
                   value={frequency}
-                  onChange={(e) => setFrequency(e.target.value as 'monthly' | 'weekly' | 'yearly')}
-                  className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-medium text-ink focus:border-ink outline-none cursor-pointer"
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="yearly">Yearly</option>
-                </select>
+                  onChange={(v) => setFrequency(v as 'monthly' | 'weekly' | 'yearly')}
+                  options={[
+                    { value: 'monthly', label: 'Monthly' },
+                    { value: 'weekly', label: 'Weekly' },
+                    { value: 'yearly', label: 'Yearly' },
+                  ]}
+                />
               </div>
 
               <div>

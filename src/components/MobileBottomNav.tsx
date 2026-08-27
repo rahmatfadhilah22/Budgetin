@@ -3,7 +3,7 @@ import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
 export const MobileBottomNav: React.FC = () => {
-  const { currentView, setCurrentView, setQuickAddOpen, draftCount } = useBudget();
+  const { currentView, navigateView, setQuickAddOpen, draftCount } = useBudget();
 
   const items: { id: ViewType; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -31,7 +31,7 @@ export const MobileBottomNav: React.FC = () => {
           return (
             <button
               key={item.id}
-              onClick={() => setCurrentView(item.id)}
+              onClick={() => navigateView(item.id)}
               className={`flex flex-col items-center justify-center w-16 h-full cursor-pointer transition-colors relative ${
                 isActive ? 'text-primary font-semibold' : 'text-on-dark-soft hover:text-on-dark'
               }`}

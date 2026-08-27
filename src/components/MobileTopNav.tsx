@@ -3,7 +3,7 @@ import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
 export const MobileTopNav: React.FC = () => {
-  const { currentView, setCurrentView, privacyMode, setPrivacyMode, draftCount, settings } = useBudget();
+  const { currentView, navigateView, privacyMode, setPrivacyMode, draftCount, settings } = useBudget();
 
   const tabs: { id: ViewType; label: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -35,7 +35,7 @@ export const MobileTopNav: React.FC = () => {
 
           {/* Alerts button */}
           <button
-            onClick={() => setCurrentView('transactions')}
+            onClick={() => navigateView('transactions')}
             aria-label="Notifications"
             className="text-muted hover:text-ink transition-colors cursor-pointer p-1 active:opacity-70 relative"
           >
@@ -47,7 +47,7 @@ export const MobileTopNav: React.FC = () => {
 
           {/* User Avatar */}
           <button
-            onClick={() => setCurrentView('settings')}
+            onClick={() => navigateView('settings')}
             className="w-8 h-8 rounded-full bg-surface-card border border-hairline text-body flex items-center justify-center font-semibold text-sm flex-shrink-0 cursor-pointer"
           >
             {settings.name.trim().slice(0, 1).toUpperCase() || 'U'}
@@ -62,7 +62,7 @@ export const MobileTopNav: React.FC = () => {
           return (
             <button
               key={tab.id}
-              onClick={() => setCurrentView(tab.id)}
+              onClick={() => navigateView(tab.id)}
               className={`py-2 whitespace-nowrap text-sm font-semibold transition-colors duration-150 cursor-pointer relative ${
                 isActive
                   ? 'text-ink border-b-2 border-primary font-bold'

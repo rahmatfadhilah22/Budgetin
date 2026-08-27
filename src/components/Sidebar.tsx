@@ -3,7 +3,7 @@ import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
 export const Sidebar: React.FC = () => {
-  const { currentView, setCurrentView, setQuickAddOpen, draftCount, unpaidRecurring, settings } = useBudget();
+  const { currentView, navigateView, setQuickAddOpen, draftCount, unpaidRecurring, settings } = useBudget();
 
   const navItems: { id: ViewType; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -46,7 +46,7 @@ export const Sidebar: React.FC = () => {
             <button
               key={item.id}
               id={`nav-${item.id}`}
-              onClick={() => setCurrentView(item.id)}
+              onClick={() => navigateView(item.id)}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer active:scale-98 ${
                 isActive
                   ? 'bg-primary text-on-primary shadow-sm'

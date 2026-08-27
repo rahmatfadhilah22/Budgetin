@@ -5,7 +5,7 @@ import { ViewType } from '../types';
 export const DesktopHeader: React.FC = () => {
   const {
     currentView,
-    setCurrentView,
+    navigateView,
     period,
     setPeriod,
     cycleDateRange,
@@ -113,7 +113,7 @@ export const DesktopHeader: React.FC = () => {
         {/* Derived alerts */}
         <div className="relative">
           <button
-            onClick={() => setCurrentView('transactions')}
+            onClick={() => navigateView('transactions')}
             className="text-muted hover:text-ink p-1.5 rounded-full hover:bg-surface-soft transition-colors relative cursor-pointer"
             title="Pending items"
           >
@@ -126,7 +126,7 @@ export const DesktopHeader: React.FC = () => {
 
         {/* Settings button */}
         <button
-          onClick={() => setCurrentView('settings')}
+          onClick={() => navigateView('settings')}
           className={`p-1.5 rounded-full hover:bg-surface-soft transition-colors cursor-pointer ${
             currentView === 'settings' ? 'text-ink bg-surface-soft' : 'text-muted hover:text-ink'
           }`}
@@ -152,7 +152,7 @@ export const DesktopHeader: React.FC = () => {
               <div className="py-1 space-y-1 text-xs">
                 <button
                   onClick={() => {
-                    setCurrentView('settings');
+                    navigateView('settings');
                     setProfileMenuOpen(false);
                   }}
                   className="w-full text-left px-2 py-1.5 rounded hover:bg-surface-card text-ink font-medium flex items-center space-x-2 cursor-pointer"
