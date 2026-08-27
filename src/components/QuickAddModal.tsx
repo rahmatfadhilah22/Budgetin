@@ -79,11 +79,11 @@ export const QuickAddModal: React.FC = () => {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs animate-in fade-in duration-150"
-      onClick={() => setQuickAddOpen(false)}
+      onMouseDown={() => setQuickAddOpen(false)}
     >
       <div
         className="bg-surface-soft w-full max-w-[480px] rounded-2xl border border-hairline p-6 md:p-8 flex flex-col gap-6 shadow-2xl relative animate-in zoom-in-95 duration-150"
-        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex justify-between items-center pb-2 border-b border-hairline">

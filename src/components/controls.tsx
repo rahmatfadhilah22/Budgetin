@@ -335,12 +335,12 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   return (
     <div
       className="fixed inset-0 z-[60] bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
-      onClick={onCancel}
+      onMouseDown={onCancel}
     >
       <div
         role="alertdialog"
         aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
         className="w-full max-w-sm bg-surface-soft rounded-2xl border border-hairline p-6 shadow-2xl animate-in zoom-in-95 duration-150 space-y-5"
       >
         <div className="flex items-start space-x-3">

@@ -176,11 +176,11 @@ export const CategoriesView: React.FC = () => {
       {modalOpen && (
         <div
           className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
-          onClick={() => setModalOpen(false)}
+          onMouseDown={() => setModalOpen(false)}
         >
           <div
             className="bg-surface-soft w-full max-w-[480px] rounded-2xl border border-hairline p-6 space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center pb-2 border-b border-hairline">
               <h3 className="font-display text-xl font-medium text-ink tracking-tight">

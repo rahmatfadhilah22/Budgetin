@@ -236,8 +236,14 @@ export const SettingsView: React.FC = () => {
 
       {/* Profile Modal */}
       {profileOpen && (
-        <div className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-surface-soft w-full max-w-[420px] rounded-2xl border border-hairline p-6 shadow-2xl space-y-4">
+        <div
+          className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onMouseDown={() => setProfileOpen(false)}
+        >
+          <div
+            className="bg-surface-soft w-full max-w-[420px] rounded-2xl border border-hairline p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center pb-2 border-b border-hairline">
               <h3 className="font-display text-lg font-medium text-ink">Profile Information</h3>
               <button onClick={() => setProfileOpen(false)} className="text-muted-soft hover:text-ink">
@@ -281,11 +287,11 @@ export const SettingsView: React.FC = () => {
       {pwdOpen && (
         <div
           className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
-          onClick={() => setPwdOpen(false)}
+          onMouseDown={() => setPwdOpen(false)}
         >
           <div
             className="bg-surface-soft w-full max-w-[420px] rounded-2xl border border-hairline p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center pb-2 border-b border-hairline">
               <h3 className="font-display text-lg font-medium text-ink">Change Password</h3>
