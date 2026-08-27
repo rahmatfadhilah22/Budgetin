@@ -19,9 +19,7 @@ export const Sidebar: React.FC = () => {
     <aside className="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-surface-dark text-on-dark flex-col p-4 space-y-2 z-40 border-r border-[#2a2823]">
       {/* Brand Header */}
       <div className="flex items-center space-x-3 mb-6 mt-1 px-2">
-        <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-display font-semibold text-xl shadow-sm">
-          B
-        </div>
+        <img src="/logo.svg" alt="Budget" className="w-10 h-10 shrink-0" />
         <div>
           <h1 className="text-xl font-bold text-on-dark leading-tight tracking-tight">Budget</h1>
           <p className="text-xs text-on-dark-soft">Personal Finance</p>
