@@ -1,17 +1,53 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 )
 
+// loadEnv applies KEY=VALUE pairs from a .env file so `go run .` works the same
+// way as Docker Compose. Looks for .env in the current directory, then the
+// parent (for `cd backend && go run .`). Already-set env vars always win.
+// ponytail: flat parse only — no quotes/escaping beyond trimming; add a real
+// dotenv lib if env values ever need interpolation.
+func loadEnv() {
+	for _, dir := range []string{".", ".."} {
+		f, err := os.Open(filepath.Join(dir, ".env"))
+		if err != nil {
+			continue
+		}
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			key, value, ok := strings.Cut(line, "=")
+			if !ok {
+				continue
+			}
+			key = strings.TrimSpace(key)
+			value = strings.Trim(strings.TrimSpace(value), `"'`)
+			if _, exists := os.LookupEnv(key); !exists {
+				os.Setenv(key, value)
+			}
+		}
+		break
+	}
+}
+
 func main() {
+	loadEnv()
 	password := os.Getenv("APP_PASSWORD")
 	if len(password) < 12 {
 		log.Fatal("APP_PASSWORD must contain at least 12 characters")
