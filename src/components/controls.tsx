@@ -81,12 +81,10 @@ export const Select: React.FC<SelectProps> = ({
       >
         <span className="whitespace-nowrap">{current?.label ?? 'Select…'}</span>
         <span
-          className={`ml-1.5 flex shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`ml-1 shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
           aria-hidden="true"
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <span className="material-symbols-outlined text-[16px]">expand_more</span>
         </span>
       </button>
 

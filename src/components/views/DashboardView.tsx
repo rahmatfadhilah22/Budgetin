@@ -125,21 +125,17 @@ export const DashboardView: React.FC = () => {
         <button
           onClick={prevCycle}
           aria-label="Siklus sebelumnya"
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-canvas text-ink transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-canvas text-body transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-body">
-            <path d="M10 4l-4 4 4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <span className="material-symbols-outlined text-[18px]">chevron_left</span>
         </button>
         <span className="text-sm font-semibold text-body-strong whitespace-nowrap">{cycleDateRange}</span>
         <button
           onClick={nextCycle}
           aria-label="Siklus berikutnya"
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-canvas text-ink transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-canvas text-body transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-body">
-            <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <span className="material-symbols-outlined text-[18px]">chevron_right</span>
         </button>
       </div>
 
