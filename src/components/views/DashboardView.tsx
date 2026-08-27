@@ -123,17 +123,23 @@ export const DashboardView: React.FC = () => {
       {/* 3. Cycle navigation */}
       <div className="flex items-center justify-center gap-3">
         <button
-          onClick={prevCycle}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            prevCycle();
+          }}
           aria-label="Siklus sebelumnya"
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-canvas text-body transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
+          className="flex h-8 w-8 shrink-0 select-none touch-manipulation items-center justify-center rounded-full border border-hairline bg-canvas text-body transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
         >
           <span className="material-symbols-outlined text-[18px]">chevron_left</span>
         </button>
-        <span className="text-sm font-semibold text-body-strong whitespace-nowrap">{cycleDateRange}</span>
+        <span className="inline-block min-w-[10.5rem] select-none text-center text-sm font-semibold text-body-strong whitespace-nowrap">{cycleDateRange}</span>
         <button
-          onClick={nextCycle}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            nextCycle();
+          }}
           aria-label="Siklus berikutnya"
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-canvas text-body transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
+          className="flex h-8 w-8 shrink-0 select-none touch-manipulation items-center justify-center rounded-full border border-hairline bg-canvas text-body transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
         >
           <span className="material-symbols-outlined text-[18px]">chevron_right</span>
         </button>

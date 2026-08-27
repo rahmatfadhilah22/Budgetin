@@ -196,11 +196,6 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return shiftCycle(period, cycleStartDay, base, cycleOffset);
   }, [period, cycleStartDay, cycleOffset]);
 
-  // Reset the cycle offset whenever the period changes (Monthly <-> Weekly).
-  useEffect(() => {
-    setCycleOffset(0);
-  }, [period]);
-
   const cycleTransactions = useMemo(
     () =>
       completedTransactions.filter(
@@ -233,6 +228,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const setPeriod = useCallback(async (p: PeriodType) => {
     const prev = data.settings;
     setData((state) => ({ ...state, settings: { ...state.settings, period: p } }));
+    setCycleOffset(0); // different cycle shape (Monthly vs Weekly) — jump back to the current one
     try {
       await api<Settings>('/api/settings', {
         method: 'PUT',
