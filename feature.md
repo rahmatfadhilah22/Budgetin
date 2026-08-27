@@ -23,11 +23,12 @@ Ringkasan kondisi keuangan satu halaman.
 
 | Elemen | Isi |
 |---|---|
-| **Kartu Income / Expenses / Remaining** | Total pemasukan, pengeluaran, dan sisa siklus (Rp). Kartu Remaining tampil sebagai permukaan gelap. |
+| **Kartu Income / Expenses / Remaining** | Total pemasukan, pengeluaran, dan sisa **siklus aktif** (Rp). Kartu Remaining tampil sebagai permukaan gelap. |
+| **Navigasi siklus ◀ ▶** | Di atas kartu summary. Pindah ke siklus sebelumnya/berikutnya; label menampilkan rentang (mis. "25 Agu – 24 Sep"). Kembali ke siklus saat ini lewat refresh atau mode Monthly/Weekly. |
 | **Banner draft** | Muncul jika ada transaksi yang belum dikategorikan. Klik **Review now →** ke daftar draft. |
 | **Banner recurring belum dibayar** | Muncul untuk template recurring yang belum ada riwayat bayar. Klik **Log it now** untuk mencatat langsung. |
-| **Kategori (progress)** | 4 kategori pengeluaran teratas: bar hijau (aman) → kuning (≥80% budget) → merah (lewat budget). |
-| **Recent Activity** | 5 transaksi terakhir. Klik untuk pindah ke halaman Transaksi. |
+| **Kategori (progress)** | 4 kategori pengeluaran teratas **dalam siklus aktif**: bar hijau (aman) → kuning (≥80% budget) → merah (lewat budget). |
+| **Recent Activity** | 5 transaksi terakhir **apa pun siklusnya**. Klik untuk pindah ke halaman Transaksi. |
 
 ---
 
@@ -109,8 +110,8 @@ Pilih menu gear atau klik avatar → **Profile Settings**.
 |---|---|
 | **Profile Information** | Ubah nama & email. Tampil di sidebar + menu profil. |
 | **Recurring reminders** | Nyalakan/matikan banner "belum dibayar" untuk recurring. |
-| **Budget cycle** | Pilih **Monthly** atau **Weekly** (menentukan label siklus di header). |
-| **Cycle start day** | Hari mulai siklus bulanan (1–31); hanya tampil saat mode Monthly. |
+| **Budget cycle** | Pilih **Monthly** atau **Weekly**. Monthly: siklus berdasarkan `Cycle start day`; Weekly: Senin–Minggu. |
+| **Cycle start day** | Hari mulai siklus bulanan (1–31); hanya tampil saat mode Monthly. Menentukan rentang siklus yang membatasi angka Dashboard (mis. 25 = 25 → 24). |
 | **Export as CSV** | Unduh riwayat transaksi (dari snapshot saat ini). |
 | **Export as JSON** | Unduh backup lengkap (settings + kategori + transaksi + recurring). |
 | **Sign out** | Tutup session. |

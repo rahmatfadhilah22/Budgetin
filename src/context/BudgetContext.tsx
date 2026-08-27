@@ -16,6 +16,7 @@ import {
   ViewType,
 } from '../types';
 import { api, ApiError } from '../api';
+import { getCycle, shiftCycle, formatRange, type Cycle } from '../cycle';
 
 export type AuthStatus = 'checking' | 'anonymous' | 'authenticated';
 
@@ -29,7 +30,7 @@ interface BudgetContextType {
 
   // View state
   currentView: ViewType;
-  setCurrentView: (view: ViewType) => void;
+  navigateView: (view: ViewType) => void;
   quickAddOpen: boolean;
   setQuickAddOpen: (open: boolean) => void;
   privacyMode: boolean;
@@ -46,6 +47,13 @@ interface BudgetContextType {
   period: PeriodType;
   setPeriod: (p: PeriodType) => void;
   cycleDateRange: string;
+
+  // Active budget cycle
+  activeCycle: Cycle;
+  cycleTransactions: Transaction[];
+  prevCycle: () => void;
+  nextCycle: () => void;
+  resetCycle: () => void;
 
   // Computed metrics
   totalIncome: number;
@@ -88,11 +96,33 @@ const EMPTY_SNAPSHOT: BudgetSnapshot = {
 
 const TODAY_LABEL = new Date().toISOString().slice(0, 10);
 
+const VIEWS: ViewType[] = ['dashboard', 'transactions', 'categories', 'recurring', 'settings'];
+
+function viewFromHash(): ViewType {
+  const hash = window.location.hash.replace(/^#\/?/, '') as ViewType;
+  return VIEWS.includes(hash) ? hash : 'dashboard';
+}
+
 export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [authStatus, setAuthStatus] = useState<AuthStatus>('checking');
   const [bootError, setBootError] = useState<string | null>(null);
   const [data, setData] = useState<BudgetSnapshot>(EMPTY_SNAPSHOT);
-  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  const [currentView, setCurrentView] = useState<ViewType>(viewFromHash);
+  const [cycleOffset, setCycleOffset] = useState(0);
+
+  // Hash-based routing: refresh / back-forward keeps the same view.
+  useEffect(() => {
+    const onHash = () => setCurrentView(viewFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const navigateView = useCallback((view: ViewType) => {
+    setCurrentView(view);
+    if (window.location.hash !== `#/${view}`) {
+      window.location.hash = `/${view}`;
+    }
+  }, []);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [privacyMode, setPrivacyMode] = useState(false);
 
@@ -156,13 +186,42 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     () => data.transactions.filter((t) => !t.isDraft),
     [data.transactions]
   );
+
+  const period = data.settings.period;
+  const cycleStartDay = data.settings.cycleStartDay;
+
+  // Active cycle: anchored on today, shifted by ◀ ▶ (offset).
+  const activeCycle = useMemo(() => {
+    const base = getCycle(period, cycleStartDay, TODAY_LABEL);
+    return shiftCycle(period, cycleStartDay, base, cycleOffset);
+  }, [period, cycleStartDay, cycleOffset]);
+
+  // Reset the cycle offset whenever the period changes (Monthly <-> Weekly).
+  useEffect(() => {
+    setCycleOffset(0);
+  }, [period]);
+
+  const cycleTransactions = useMemo(
+    () =>
+      completedTransactions.filter(
+        (t) => t.date >= activeCycle.start && t.date <= activeCycle.end
+      ),
+    [completedTransactions, activeCycle]
+  );
+
+  const cycleDateRange = formatRange(activeCycle.start, activeCycle.end);
+
+  const prevCycle = useCallback(() => setCycleOffset((o) => o - 1), []);
+  const nextCycle = useCallback(() => setCycleOffset((o) => o + 1), []);
+  const resetCycle = useCallback(() => setCycleOffset(0), []);
+
   const totalIncome = useMemo(
-    () => completedTransactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
-    [completedTransactions]
+    () => cycleTransactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+    [cycleTransactions]
   );
   const totalExpenses = useMemo(
-    () => completedTransactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
-    [completedTransactions]
+    () => cycleTransactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
+    [cycleTransactions]
   );
   const remainingBalance = totalIncome - totalExpenses;
   const unpaidRecurring = useMemo(
@@ -170,17 +229,19 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [data.recurring]
   );
 
-  const period = data.settings.period;
-  const cycleDateRange = period === 'weekly'
-    ? `${TODAY_LABEL} week`
-    : `Cycle starts on the ${data.settings.cycleStartDay}`;
-
+  // Optimistic so the UI flips instantly; rolls back if the server rejects.
   const setPeriod = useCallback(async (p: PeriodType) => {
-    await api<Settings>('/api/settings', {
-      method: 'PUT',
-      body: JSON.stringify({ ...data.settings, period: p }),
-    });
-    setData((prev) => ({ ...prev, settings: { ...prev.settings, period: p } }));
+    const prev = data.settings;
+    setData((state) => ({ ...state, settings: { ...state.settings, period: p } }));
+    try {
+      await api<Settings>('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ ...prev, period: p }),
+      });
+    } catch (err) {
+      setData((state) => ({ ...state, settings: { ...state.settings, period: prev.period } }));
+      throw err;
+    }
   }, [data.settings]);
 
   const updateSettings = useCallback(async (updates: Partial<Settings>) => {
@@ -337,7 +398,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         logout,
         retry,
         currentView,
-        setCurrentView,
+        navigateView,
         quickAddOpen,
         setQuickAddOpen,
         privacyMode,
@@ -350,6 +411,11 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         period,
         setPeriod,
         cycleDateRange,
+        activeCycle,
+        cycleTransactions,
+        prevCycle,
+        nextCycle,
+        resetCycle,
         totalIncome,
         totalExpenses,
         remainingBalance,

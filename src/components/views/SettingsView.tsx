@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext';
+import { Select, Toggle } from '../controls';
 
 export const SettingsView: React.FC = () => {
   const {
@@ -107,11 +108,9 @@ export const SettingsView: React.FC = () => {
                 <span className="text-xs text-muted-soft">Show unpaid recurring alerts</span>
               </div>
             </div>
-            <input
-              type="checkbox"
+            <Toggle
               checked={settings.notificationsEnabled}
-              onChange={(e) => handleToggleNotifications(e.target.checked)}
-              className="rounded border-hairline text-primary focus:ring-primary cursor-pointer w-4 h-4"
+              onChange={handleToggleNotifications}
             />
           </div>
 
@@ -125,14 +124,15 @@ export const SettingsView: React.FC = () => {
                 <span className="text-xs text-muted-soft">{cycleDateRange}</span>
               </div>
             </div>
-            <select
+            <Select
+              variant="sm"
               value={period}
-              onChange={(e) => setPeriod(e.target.value as 'monthly' | 'weekly')}
-              className="text-xs bg-canvas border border-hairline rounded-lg px-2.5 py-2 font-medium text-ink outline-none cursor-pointer"
-            >
-              <option value="monthly">Monthly</option>
-              <option value="weekly">Weekly</option>
-            </select>
+              onChange={(v) => setPeriod(v as 'monthly' | 'weekly')}
+              options={[
+                { value: 'monthly', label: 'Monthly' },
+                { value: 'weekly', label: 'Weekly' },
+              ]}
+            />
           </div>
 
           {period === 'monthly' && (
@@ -143,7 +143,7 @@ export const SettingsView: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-body-strong block">Cycle start day</span>
-                  <span className="text-xs text-muted-soft">Day of month your cycle begins</span>
+                  <span className="text-xs text-muted-soft">Hari mulai siklus; membatasi angka Dashboard (mis. 25 = 25 → 24)</span>
                 </div>
               </div>
               <input

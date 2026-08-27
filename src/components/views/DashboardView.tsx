@@ -4,7 +4,7 @@ import { formatDate } from '../../date';
 
 export const DashboardView: React.FC = () => {
   const {
-    setCurrentView,
+    navigateView,
     formatCurrency,
     totalIncome,
     totalExpenses,
@@ -14,15 +14,19 @@ export const DashboardView: React.FC = () => {
     categories,
     unpaidRecurring,
     logRecurringPayment,
+    cycleDateRange,
+    cycleTransactions,
+    prevCycle,
+    nextCycle,
   } = useBudget();
 
   const [loggingId, setLoggingId] = useState<string | null>(null);
   const [logError, setLogError] = useState<string | null>(null);
 
-  // Calculate category spent amounts
+  // Calculate category spent amounts within the active cycle
   const categorySpending = categories.map((cat) => {
-    const spent = transactions
-      .filter((t) => !t.isDraft && t.type === 'expense' && t.categoryId === cat.id)
+    const spent = cycleTransactions
+      .filter((t) => t.type === 'expense' && t.categoryId === cat.id)
       .reduce((sum, t) => sum + t.amount, 0);
 
     const percent = cat.budget > 0 ? Math.min(Math.round((spent / cat.budget) * 100), 100) : 0;
@@ -83,7 +87,7 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={() => setCurrentView('transactions')}
+            onClick={() => navigateView('transactions')}
             className="text-xs font-bold text-[#b5790f] hover:underline underline-offset-2 px-2 py-1 cursor-pointer self-start sm:self-auto"
           >
             Review now →
@@ -116,7 +120,30 @@ export const DashboardView: React.FC = () => {
         </p>
       )}
 
-      {/* 3. Summary Cards */}
+      {/* 3. Cycle navigation */}
+      <div className="flex items-center justify-center gap-3">
+        <button
+          onClick={prevCycle}
+          aria-label="Siklus sebelumnya"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-canvas text-ink transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-body">
+            <path d="M10 4l-4 4 4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <span className="text-sm font-semibold text-body-strong whitespace-nowrap">{cycleDateRange}</span>
+        <button
+          onClick={nextCycle}
+          aria-label="Siklus berikutnya"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-hairline bg-canvas text-ink transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-body">
+            <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+
+      {/* 4. Summary Cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <div className="bg-surface-card p-6 rounded-2xl border border-hairline flex flex-col justify-between">
           <div>
@@ -164,20 +191,22 @@ export const DashboardView: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. Two-Column Layout */}
+      {/* 5. Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 pt-2">
         <section className="lg:col-span-5 space-y-5 bg-surface-card p-5 md:p-6 rounded-2xl border border-hairline">
           <div className="flex justify-between items-center pb-2 border-b border-hairline-soft">
             <h3 className="font-display text-xl font-medium text-ink tracking-tight">Categories</h3>
             <button
-              onClick={() => setCurrentView('categories')}
+              onClick={() => navigateView('categories')}
               className="text-xs font-semibold text-muted hover:text-ink transition-colors cursor-pointer"
             >
               Manage →
             </button>
           </div>
 
-          {categorySpending.length === 0 ? (
+          {cycleTransactions.length === 0 ? (
+            <p className="text-xs text-muted">Belum ada transaksi di siklus ini.</p>
+          ) : categorySpending.length === 0 ? (
             <p className="text-xs text-muted">Add expense categories with budgets to track them here.</p>
           ) : (
             <div className="space-y-4">
@@ -209,7 +238,7 @@ export const DashboardView: React.FC = () => {
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-hairline-soft">
               <h3 className="font-display text-xl font-medium text-ink tracking-tight">Recent Activity</h3>
               <button
-                onClick={() => setCurrentView('transactions')}
+                onClick={() => navigateView('transactions')}
                 className="text-xs font-semibold text-ink underline underline-offset-2 hover:no-underline cursor-pointer"
               >
                 View all
@@ -223,7 +252,7 @@ export const DashboardView: React.FC = () => {
                 {recentTransactions.map((tx) => (
                   <div
                     key={tx.id}
-                    onClick={() => setCurrentView('transactions')}
+                    onClick={() => navigateView('transactions')}
                     className="flex items-center justify-between py-3.5 group cursor-pointer hover:bg-canvas transition-colors -mx-2 px-2 rounded-lg"
                   >
                     <div className="flex items-center space-x-3">
@@ -254,7 +283,7 @@ export const DashboardView: React.FC = () => {
 
           <div className="pt-4 border-t border-hairline-soft mt-4 flex justify-end">
             <button
-              onClick={() => setCurrentView('transactions')}
+              onClick={() => navigateView('transactions')}
               className="text-xs font-medium text-muted hover:text-ink transition-colors flex items-center space-x-1 cursor-pointer"
             >
               <span>Explore all {transactions.length} transactions</span>
