@@ -52,24 +52,33 @@ export function getCycle(period: PeriodType, startDay: number, anchorISO: string
   return { start: toISO(start), end: toISO(end) };
 }
 
-/** Shift a cycle by `delta` cycles (±1 works for ◀ ▶). */
+/** Shift a cycle by `delta` cycles (◀ ▶ pass ±1; any N works). */
 export function shiftCycle(period: PeriodType, startDay: number, cycle: Cycle, delta: number): Cycle {
+  // Anchor on the cycle's midpoint so the shift is exact (edge-anchoring collapses for |delta| > 1).
+  const anchor = parseISO(cycle.start);
   if (period === 'weekly') {
-    const anchor = parseISO(cycle.start);
     return getCycle(period, startDay, toISO(new Date(anchor.getTime() + delta * 7 * DAY)));
   }
-  // Anchor just past the current cycle's edge — guaranteed to sit inside the target cycle.
-  const edgeISO = delta > 0 ? cycle.end : cycle.start;
-  const edge = parseISO(edgeISO);
-  const offset = (delta > 0 ? 1 : -1) * DAY;
-  return getCycle(period, startDay, toISO(new Date(edge.getTime() + offset)));
+  const [y, m] = [anchor.getUTCFullYear(), anchor.getUTCMonth()];
+  // Target month = start-month + delta. Anchor on day 28 (never clamps across a month boundary).
+  const monthIndex = y * 12 + m + delta;
+  const targetStart = cycleStartForMonth(Math.floor(monthIndex / 12), monthIndex % 12, startDay);
+  return getCycle(period, startDay, toISO(targetStart));
 }
 
-const monthName = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' });
+const dayMonth = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' });
+const yearFmt = new Intl.DateTimeFormat('id-ID', { year: 'numeric' });
 
-/** "25 Jul – 24 Agu" style range label (inclusive). */
+/** "25 Jul – 24 Agu" style range label (inclusive) — no year, so it stays stable across months. */
 export function formatRange(startISO: string, endISO: string): string {
-  const s = monthName.format(parseISO(startISO));
-  const e = monthName.format(parseISO(endISO));
+  const s = dayMonth.format(parseISO(startISO));
+  const e = dayMonth.format(parseISO(endISO));
   return `${s} – ${e}`;
+}
+
+/** "2026", or "2026 – 2027" when the cycle crosses a year boundary. */
+export function cycleYear(startISO: string, endISO: string): string {
+  const s = yearFmt.format(parseISO(startISO));
+  const e = yearFmt.format(parseISO(endISO));
+  return s === e ? s : `${s} – ${e}`;
 }

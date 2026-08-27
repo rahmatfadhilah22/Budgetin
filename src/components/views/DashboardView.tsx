@@ -15,6 +15,7 @@ export const DashboardView: React.FC = () => {
     unpaidRecurring,
     logRecurringPayment,
     cycleDateRange,
+    cycleYearLabel,
     cycleTransactions,
     prevCycle,
     nextCycle,
@@ -54,6 +55,11 @@ export const DashboardView: React.FC = () => {
     const cat = categories.find((c) => c.id === categoryId);
     return cat ? cat.name : 'General';
   };
+
+  // Honest Remaining bar: no income → empty (0%); overspent → red. No more fake 50% placeholder.
+  const remainingPct = totalIncome > 0 ? (remainingBalance / totalIncome) * 100 : 0;
+  const remainingBarWidth = Math.min(Math.max(remainingPct, 0), 100);
+  const isOverspent = remainingBalance < 0;
 
   const handleLog = async (id: string) => {
     if (loggingId) return;
@@ -121,7 +127,9 @@ export const DashboardView: React.FC = () => {
       )}
 
       {/* 3. Cycle navigation */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="text-center">
+        <div className="mb-1 select-none text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{cycleYearLabel}</div>
+        <div className="flex items-center justify-center gap-3">
         <button
           onPointerDown={(e) => {
             e.preventDefault();
@@ -143,6 +151,7 @@ export const DashboardView: React.FC = () => {
         >
           <span className="material-symbols-outlined text-[18px]">chevron_right</span>
         </button>
+        </div>
       </div>
 
       {/* 4. Summary Cards */}
@@ -183,10 +192,8 @@ export const DashboardView: React.FC = () => {
           <div className="mt-4">
             <div className="w-full h-1.5 bg-white/15 rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary rounded-full transition-all duration-500"
-                style={{
-                  width: `${totalIncome > 0 ? Math.min(Math.max((remainingBalance / totalIncome) * 100, 5), 100) : 50}%`,
-                }}
+                className={`h-full rounded-full transition-all duration-500 ${isOverspent ? 'bg-error' : 'bg-primary'}`}
+                style={{ width: `${remainingBarWidth}%` }}
               />
             </div>
           </div>

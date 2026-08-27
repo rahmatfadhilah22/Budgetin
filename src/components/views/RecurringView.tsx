@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext';
-import { RecurringTemplate } from '../../types';
-import { Select } from '../controls';
+import { RecurringTemplate, Transaction } from '../../types';
+import { Select, ConfirmDialog } from '../controls';
 
 export const RecurringView: React.FC = () => {
   const {
@@ -11,12 +11,26 @@ export const RecurringView: React.FC = () => {
     updateRecurring,
     deleteRecurring,
     logRecurringPayment,
+    syncRecurring,
+    updateTransaction,
+    deleteTransaction,
+    transactions,
     unpaidRecurring,
     formatCurrency,
   } = useBudget();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<RecurringTemplate | null>(null);
+
+  // History panel: which template is open + its linked transactions.
+  const [historyFor, setHistoryFor] = useState<RecurringTemplate | null>(null);
+  const [historyCat, setHistoryCat] = useState<Record<string, string>>({});
+  const [syncing, setSyncing] = useState(false);
+  const [txBusyId, setTxBusyId] = useState<string | null>(null);
+  const [txDeleteId, setTxDeleteId] = useState<string | null>(null);
+  const [txConfirmOpen, setTxConfirmOpen] = useState(false);
+  const [txConfirmId, setTxConfirmId] = useState<string | null>(null);
+  const [panelError, setPanelError] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -28,9 +42,22 @@ export const RecurringView: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [loggingId, setLoggingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const expenseCategories = categories.filter((c) => c.type === 'expense');
+
+  // Live thousands separator: store the formatted string ("1.500.000"), strip separators on save.
+  const formatInt = (n: number) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
+  const handleAmountChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    setAmountStr(digits ? formatInt(parseInt(digits, 10)) : '');
+  };
+  const handleDueDayChange = (raw: string) => {
+    const day = parseInt(raw.replace(/\D/g, ''), 10) || 0;
+    setDueDay(Math.min(Math.max(day, 1), 31));
+  };
 
   const openNewModal = () => {
     setEditingTemplate(null);
@@ -48,7 +75,7 @@ export const RecurringView: React.FC = () => {
     setEditingTemplate(rec);
     setName(rec.name);
     setCategoryId(rec.categoryId);
-    setAmountStr(String(rec.defaultAmount));
+    setAmountStr(rec.defaultAmount ? formatInt(rec.defaultAmount) : '');
     setDueDay(rec.dueDay);
     setFrequency(rec.frequency);
     setIcon(rec.icon);
@@ -63,7 +90,7 @@ export const RecurringView: React.FC = () => {
       setError('Please enter a template name.');
       return;
     }
-    const amountVal = Math.round(parseFloat(amountStr) || 0);
+    const amountVal = parseInt(amountStr.replace(/\D/g, ''), 10) || 0;
     if (amountVal <= 0) {
       setError('Amount must be greater than 0.');
       return;
@@ -97,13 +124,14 @@ export const RecurringView: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     if (deletingId) return;
-    if (!window.confirm('Delete this recurring template? Past transactions are kept.')) return;
-    setDeletingId(id);
+    setDeletingId(confirmId);
+
     setError(null);
     try {
-      await deleteRecurring(id);
+      await deleteRecurring(confirmId);
+      setConfirmOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not delete template');
     } finally {
@@ -114,6 +142,58 @@ export const RecurringView: React.FC = () => {
   const getCategoryName = (catId: string) => {
     const cat = categories.find((c) => c.id === catId);
     return cat ? cat.name : 'Uncategorized';
+  };
+
+  const openHistory = (rec: RecurringTemplate) => {
+    setHistoryFor(rec);
+    setHistoryCat({});
+    setPanelError(null);
+    setTxConfirmOpen(false);
+    setTxConfirmId(null);
+  };
+
+  const historyTransactions = historyFor
+    ? transactions.filter((t) => t.templateId === historyFor.id)
+    : [];
+
+  const handleTxCategoryChange = async (tx: Transaction, catId: string) => {
+    if (txBusyId) return;
+    setTxBusyId(tx.id);
+    setPanelError(null);
+    try {
+      await updateTransaction(tx.id, { categoryId: catId || undefined });
+    } catch (err) {
+      setPanelError(err instanceof Error ? err.message : 'Could not update category');
+    } finally {
+      setTxBusyId(null);
+    }
+  };
+
+  const handleTxDelete = async () => {
+    if (!txDeleteId || !txConfirmId) return;
+    setTxDeleteId(txConfirmId);
+    setPanelError(null);
+    try {
+      await deleteTransaction(txConfirmId);
+      setTxConfirmOpen(false);
+    } catch (err) {
+      setPanelError(err instanceof Error ? err.message : 'Could not delete transaction');
+    } finally {
+      setTxDeleteId(null);
+    }
+  };
+
+  const handleSync = async () => {
+    if (!historyFor || syncing) return;
+    setSyncing(true);
+    setPanelError(null);
+    try {
+      await syncRecurring(historyFor.id);
+    } catch (err) {
+      setPanelError(err instanceof Error ? err.message : 'Could not sync history');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const ordinal = (n: number) => (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
@@ -162,10 +242,10 @@ export const RecurringView: React.FC = () => {
       ) : (
         <div className="bg-surface-card rounded-2xl border border-hairline overflow-hidden">
           <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-hairline bg-surface-soft text-xs font-semibold text-muted uppercase tracking-wider">
-            <div className="col-span-4">Name</div>
-            <div className="col-span-3">Category</div>
-            <div className="col-span-3 text-right">Default Amount</div>
-            <div className="col-span-2 text-right">Due Day</div>
+            <div className="col-span-4 pl-14">Name</div>
+            <div className="col-span-2">Category</div>
+            <div className="col-span-2 text-right">Default Amount</div>
+            <div className="col-span-4 pl-8">Due Day</div>
           </div>
 
           <div className="divide-y divide-hairline-soft">
@@ -173,7 +253,7 @@ export const RecurringView: React.FC = () => {
               const isPaid = !!rec.lastPaidDate;
               return (
                 <div key={rec.id} className="group flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 p-4 hover:bg-surface-soft transition-colors items-start md:items-center">
-                  <div className="col-span-4 flex items-center w-full space-x-3">
+                  <div className="col-span-4 flex items-center w-full pl-1 space-x-3">
                     <div className="w-10 h-10 rounded-2xl bg-surface-soft text-body flex items-center justify-center shrink-0 group-hover:bg-ink group-hover:text-canvas transition-colors">
                       <span className="material-symbols-outlined text-[20px]">{rec.icon}</span>
                     </div>
@@ -183,15 +263,15 @@ export const RecurringView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="hidden md:block col-span-3">
+                  <div className="hidden md:block col-span-2">
                     <span className="inline-block px-2.5 py-1 bg-surface-soft rounded-md text-muted text-xs font-semibold">{getCategoryName(rec.categoryId)}</span>
                   </div>
 
-                  <div className="col-span-3 w-full text-left md:text-right font-display text-lg md:text-xl font-semibold text-ink tracking-tight">
+                  <div className="col-span-2 w-full text-left md:text-right font-display text-lg md:text-xl font-semibold text-ink tracking-tight">
                     {formatCurrency(rec.defaultAmount)}
                   </div>
 
-                  <div className="col-span-2 w-full text-left md:text-right text-xs text-muted flex items-center justify-between md:justify-end space-x-2">
+                  <div className="col-span-4 w-full pl-8 text-left text-xs text-muted flex items-center justify-between space-x-2">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">Due on the {rec.dueDay}{ordinal(rec.dueDay)}</span>
                       {isPaid && (
@@ -209,6 +289,13 @@ export const RecurringView: React.FC = () => {
                         </button>
                       )}
                       <button
+                        onClick={() => openHistory(rec)}
+                        title="View payment history"
+                        className="text-xs border border-hairline bg-surface-soft hover:bg-hairline px-2 py-1 rounded font-medium cursor-pointer"
+                      >
+                        History{transactions.filter((t) => t.templateId === rec.id).length > 0 ? ` (${transactions.filter((t) => t.templateId === rec.id).length})` : ''}
+                      </button>
+                      <button
                         onClick={() => openEditModal(rec)}
                         className="text-muted-soft hover:text-ink p-1 hover:bg-hairline rounded transition-colors cursor-pointer"
                         title="Edit template"
@@ -216,7 +303,7 @@ export const RecurringView: React.FC = () => {
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                       </button>
                       <button
-                        onClick={() => handleDelete(rec.id)}
+                        onClick={() => { setConfirmId(rec.id); setConfirmOpen(true); }}
                         disabled={deletingId === rec.id}
                         className="text-muted-soft hover:text-error p-1 hover:bg-hairline rounded transition-colors cursor-pointer disabled:opacity-60"
                         title="Delete template"
@@ -278,47 +365,47 @@ export const RecurringView: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Amount (Rp)</label>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Amount</label>
                   <input
-                    type="number"
+                    type="text"
                     inputMode="numeric"
-                    step="1"
-                    min="1"
+                    autoComplete="off"
                     required
                     value={amountStr}
-                    onChange={(e) => setAmountStr(e.target.value)}
+                    onChange={(e) => handleAmountChange(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-semibold text-ink focus:border-ink outline-none"
+                    className="w-full bg-canvas border border-hairline rounded-lg p-2.5 font-display text-base font-semibold text-ink focus:border-ink outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Due Day of Month</label>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Due Day</label>
                   <input
-                    type="number"
-                    min="1"
-                    max="31"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
                     required
                     value={dueDay}
-                    onChange={(e) => setDueDay(parseInt(e.target.value) || 1)}
-                    className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-semibold text-ink focus:border-ink outline-none"
+                    onChange={(e) => handleDueDayChange(e.target.value)}
+                    placeholder="1"
+                    className="w-full bg-canvas border border-hairline rounded-lg p-2.5 font-display text-base font-semibold text-ink focus:border-ink outline-none"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Frequency</label>
-                <Select
-                  className="w-full"
-                  value={frequency}
-                  onChange={(v) => setFrequency(v as 'monthly' | 'weekly' | 'yearly')}
-                  options={[
-                    { value: 'monthly', label: 'Monthly' },
-                    { value: 'weekly', label: 'Weekly' },
-                    { value: 'yearly', label: 'Yearly' },
-                  ]}
-                />
+                <div>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Frequency</label>
+                  <Select
+                    variant="lg"
+                    className="w-full"
+                    value={frequency}
+                    onChange={(v) => setFrequency(v as 'monthly' | 'weekly' | 'yearly')}
+                    options={[
+                      { value: 'monthly', label: 'Monthly' },
+                      { value: 'weekly', label: 'Weekly' },
+                      { value: 'yearly', label: 'Yearly' },
+                    ]}
+                  />
+                </div>
               </div>
 
               <div>
@@ -328,6 +415,7 @@ export const RecurringView: React.FC = () => {
                     <button
                       key={ic}
                       type="button"
+                      title={ic.replace(/_/g, ' ')}
                       onClick={() => setIcon(ic)}
                       className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer ${
                         icon === ic ? 'bg-primary text-on-primary' : 'bg-surface-card text-body hover:bg-hairline'
@@ -356,6 +444,94 @@ export const RecurringView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* History panel for a template */}
+      {historyFor && (
+        <div
+          className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setHistoryFor(null)}
+        >
+          <div
+            className="bg-surface-soft w-full max-w-[520px] rounded-2xl border border-hairline p-6 space-y-4 max-h-[85vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center pb-2 border-b border-hairline">
+              <h3 className="font-display text-xl font-medium text-ink tracking-tight">
+                History — {historyFor.name}
+              </h3>
+              <button onClick={() => setHistoryFor(null)} className="text-muted hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
+                <span className="material-symbols-outlined text-[22px]">close</span>
+              </button>
+            </div>
+
+            {panelError && <p role="alert" aria-live="polite" className="text-xs font-semibold text-error">{panelError}</p>}
+
+            {historyTransactions.length === 0 ? (
+              <p className="text-sm text-muted">No payments recorded for this template yet.</p>
+            ) : (
+              <div className="divide-y divide-hairline-soft">
+                {historyTransactions.map((tx) => (
+                  <div key={tx.id} className="py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-semibold text-body-strong truncate">{tx.merchant}</span>
+                        {tx.categoryId && <span className="text-[10px] bg-surface-card border border-hairline px-1.5 py-0.2 rounded text-muted font-semibold whitespace-nowrap">{getCategoryName(tx.categoryId)}</span>}
+                      </div>
+                      <div className="text-xs text-muted mt-0.5">{tx.date}</div>
+                    </div>
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <span className="text-sm font-bold text-ink">{formatCurrency(tx.amount)}</span>
+                      <Select
+                        variant="sm"
+                        value={historyCat[tx.id] ?? tx.categoryId ?? ''}
+                        onChange={(v) => { setHistoryCat((p) => ({ ...p, [tx.id]: v })); handleTxCategoryChange(tx, v); }}
+                        disabled={txBusyId === tx.id}
+                        options={expenseCategories.map((c) => ({ value: c.id, label: c.name }))}
+                      />
+                      <button
+                        onClick={() => { setTxConfirmId(tx.id); setTxConfirmOpen(true); }}
+                        disabled={txBusyId === tx.id || txDeleteId === tx.id}
+                        className="text-muted-soft hover:text-error p-1 hover:bg-hairline rounded transition-colors cursor-pointer disabled:opacity-60"
+                        title="Delete this transaction"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {historyTransactions.length > 0 && (
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                className="w-full py-2.5 rounded-xl border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/5 transition-colors cursor-pointer disabled:opacity-60"
+              >
+                {syncing ? 'Updating…' : `Align ${historyTransactions.length} transaction${historyTransactions.length === 1 ? '' : 's'} with template (name + category, amounts untouched)`}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={txConfirmOpen}
+        title="Delete transaction?"
+        message="Delete this payment from the history?"
+        busy={!!txDeleteId}
+        onConfirm={handleTxDelete}
+        onCancel={() => setTxConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete template?"
+        message="Delete this recurring template? Past transactions are kept."
+        busy={!!deletingId}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 };

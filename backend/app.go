@@ -51,6 +51,7 @@ func newApp(db *sql.DB, password string, secureCookie bool, distDir string) *app
 	protected.HandleFunc("PUT /api/recurring/{id}", a.updateRecurring)
 	protected.HandleFunc("DELETE /api/recurring/{id}", a.deleteRecurring)
 	protected.HandleFunc("POST /api/recurring/{id}/log", a.logRecurring)
+	protected.HandleFunc("POST /api/recurring/{id}/sync", a.syncRecurring)
 	protected.HandleFunc("PUT /api/settings", a.updateSettings)
 
 	a.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

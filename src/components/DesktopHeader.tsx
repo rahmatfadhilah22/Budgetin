@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
@@ -9,10 +9,10 @@ export const DesktopHeader: React.FC = () => {
     period,
     setPeriod,
     cycleDateRange,
+    cycleYearLabel,
     privacyMode,
     setPrivacyMode,
     settings,
-    setQuickAddOpen,
     logout,
     draftCount,
     unpaidRecurring,
@@ -20,6 +20,19 @@ export const DesktopHeader: React.FC = () => {
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close the profile menu when clicking anywhere outside it.
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const onDocDown = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocDown);
+    return () => document.removeEventListener('mousedown', onDocDown);
+  }, [profileMenuOpen]);
 
   const getPageTitle = (view: ViewType) => {
     switch (view) {
@@ -89,8 +102,9 @@ export const DesktopHeader: React.FC = () => {
       <div className="flex items-center space-x-4">
         {/* Date range display */}
         {['dashboard', 'transactions'].includes(currentView) && (
-          <span className="text-sm font-medium text-body mr-2">
-            {cycleDateRange}
+          <span className="flex flex-col items-end leading-tight mr-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">{cycleYearLabel}</span>
+            <span className="text-sm font-medium text-body">{cycleDateRange}</span>
           </span>
         )}
 
@@ -135,7 +149,7 @@ export const DesktopHeader: React.FC = () => {
         </button>
 
         {/* User Profile Avatar */}
-        <div className="relative">
+        <div className="relative" ref={profileRef}>
           <button
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
             className="w-8 h-8 rounded-full bg-surface-card border border-hairline text-body flex items-center justify-center font-semibold text-sm cursor-pointer hover:ring-2 hover:ring-primary transition-all flex-shrink-0"
@@ -159,16 +173,6 @@ export const DesktopHeader: React.FC = () => {
                 >
                   <span className="material-symbols-outlined text-[16px]">person</span>
                   <span>Profile Settings</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setQuickAddOpen(true);
-                    setProfileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-2 py-1.5 rounded hover:bg-surface-card text-ink font-medium flex items-center space-x-2 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[16px]">add</span>
-                  <span>Quick Add Transaction</span>
                 </button>
                 <button
                   onClick={handleLogout}

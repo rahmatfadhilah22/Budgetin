@@ -11,7 +11,6 @@ export const SettingsView: React.FC = () => {
     cycleDateRange,
     exportCSV,
     exportJSON,
-    logout,
   } = useBudget();
 
   const [profileOpen, setProfileOpen] = useState(false);
@@ -19,7 +18,6 @@ export const SettingsView: React.FC = () => {
   const [emailInput, setEmailInput] = useState(settings.email);
   const [savingProfile, setSavingProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,15 +51,6 @@ export const SettingsView: React.FC = () => {
       await updateSettings({ cycleStartDay: day });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update setting');
-    }
-  };
-
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await logout();
-    } finally {
-      setLoggingOut(false);
     }
   };
 
@@ -186,18 +175,6 @@ export const SettingsView: React.FC = () => {
             </button>
           </div>
         </div>
-      </section>
-
-      {/* SESSION SECTION */}
-      <section className="pt-4 border-t border-hairline">
-        <button
-          onClick={handleLogout}
-          disabled={loggingOut}
-          className="flex items-center space-x-2 text-error hover:text-[#a63a3a] transition-colors text-xs font-bold cursor-pointer disabled:opacity-60"
-        >
-          <span className="material-symbols-outlined text-[18px]">logout</span>
-          <span>{loggingOut ? 'Signing out…' : 'Sign out'}</span>
-        </button>
       </section>
 
       {/* Profile Modal */}

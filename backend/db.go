@@ -29,10 +29,22 @@ func migrate(db *sql.DB) error {
 	if err := db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
 		return err
 	}
-	if version >= 1 {
-		return nil
+	if version < 1 {
+		if err := migrateV1(db); err != nil {
+			return err
+		}
+		version = 1
 	}
+	if version < 2 {
+		if err := migrateV2(db); err != nil {
+			return err
+		}
+		version = 2
+	}
+	return nil
+}
 
+func migrateV1(db *sql.DB) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
@@ -83,6 +95,28 @@ INSERT INTO settings (id) VALUES (1);
 PRAGMA user_version = 1;
 `
 	if _, err := tx.Exec(schema); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// v2: link recurring-logged transactions back to their template.
+func migrateV2(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// NULL template_id = recurring transaction whose template is gone/renamed (orphan).
+	if _, err := tx.Exec("ALTER TABLE transactions ADD COLUMN template_id TEXT REFERENCES recurring_templates(id) ON DELETE SET NULL"); err != nil {
+		return err
+	}
+	// Best-effort backfill by merchant name for transactions logged before this migration.
+	if _, err := tx.Exec(`UPDATE transactions SET template_id = (SELECT id FROM recurring_templates rt WHERE rt.name = transactions.merchant LIMIT 1) WHERE is_recurring = 1 AND template_id IS NULL`); err != nil {
+		return err
+	}
+	if _, err := tx.Exec("PRAGMA user_version = 2"); err != nil {
 		return err
 	}
 	return tx.Commit()

@@ -16,7 +16,7 @@ import {
   ViewType,
 } from '../types';
 import { api, ApiError } from '../api';
-import { getCycle, shiftCycle, formatRange, type Cycle } from '../cycle';
+import { getCycle, shiftCycle, formatRange, cycleYear, type Cycle } from '../cycle';
 
 export type AuthStatus = 'checking' | 'anonymous' | 'authenticated';
 
@@ -47,6 +47,7 @@ interface BudgetContextType {
   period: PeriodType;
   setPeriod: (p: PeriodType) => void;
   cycleDateRange: string;
+  cycleYearLabel: string;
 
   // Active budget cycle
   activeCycle: Cycle;
@@ -77,6 +78,7 @@ interface BudgetContextType {
   updateRecurring: (id: string, rec: Partial<RecurringTemplate>) => Promise<void>;
   deleteRecurring: (id: string) => Promise<void>;
   logRecurringPayment: (id: string) => Promise<void>;
+  syncRecurring: (id: string) => Promise<Transaction[]>;
 
   updateSettings: (updates: Partial<Settings>) => Promise<void>;
 
@@ -205,6 +207,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const cycleDateRange = formatRange(activeCycle.start, activeCycle.end);
+  const cycleYearLabel = cycleYear(activeCycle.start, activeCycle.end);
 
   const prevCycle = useCallback(() => setCycleOffset((o) => o - 1), []);
   const nextCycle = useCallback(() => setCycleOffset((o) => o + 1), []);
@@ -359,6 +362,16 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }));
   }, []);
 
+  // Align a template's linked transactions with its current name & category (amounts untouched).
+  const syncRecurring = useCallback(async (id: string) => {
+    const synced = await api<Transaction[]>(`/api/recurring/${id}/sync`, { method: 'POST' });
+    setData((prev) => {
+      const byId = new Map(synced.map((t) => [t.id, t]));
+      return { ...prev, transactions: prev.transactions.map((t) => byId.get(t.id) ?? t) };
+    });
+    return synced;
+  }, []);
+
   // Client-side export from the current snapshot (backup helpers only).
   const exportCSV = useCallback(() => {
     const headers = ['ID', 'Date', 'Merchant', 'Type', 'Amount', 'Category', 'IsDraft', 'IsRecurring', 'Note'];
@@ -407,6 +420,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         period,
         setPeriod,
         cycleDateRange,
+        cycleYearLabel,
         activeCycle,
         cycleTransactions,
         prevCycle,
@@ -429,6 +443,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateRecurring,
         deleteRecurring,
         logRecurringPayment,
+        syncRecurring,
         updateSettings,
         exportCSV,
         exportJSON,

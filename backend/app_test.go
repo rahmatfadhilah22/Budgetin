@@ -86,7 +86,7 @@ func TestFreshDatabaseIsEmptyAndMigrationIsIdempotent(t *testing.T) {
 	if err := db.QueryRow("SELECT COUNT(*) FROM categories").Scan(&categories); err != nil {
 		t.Fatal(err)
 	}
-	if version != 1 || categories != 0 {
+	if version != 2 || categories != 0 {
 		t.Fatalf("version=%d categories=%d", version, categories)
 	}
 	if _, err := db.Exec("INSERT INTO categories(id,name,type,budget,icon) VALUES('bad','Bad','expense',-1,'x')"); err == nil {
@@ -150,10 +150,38 @@ func TestCategoryTransactionAndRecurringFlow(t *testing.T) {
 	if !logged.Transaction.IsRecurring || logged.Recurring.LastPaidDate == nil {
 		t.Fatalf("unexpected recurring log: %+v", logged)
 	}
+	if logged.Transaction.TemplateID == nil || *logged.Transaction.TemplateID != recurring.ID {
+		t.Fatalf("logged transaction missing template_id: %+v", logged.Transaction)
+	}
 
 	snapshot := decode[Snapshot](t, request(t, client, http.MethodGet, server.URL+"/api/data", nil))
 	if len(snapshot.Categories) != 1 || len(snapshot.Transactions) != 2 || len(snapshot.Recurring) != 1 {
 		t.Fatalf("unexpected snapshot sizes: %+v", snapshot)
+	}
+	// The logged transaction carries template_id through the snapshot.
+	found := false
+	for _, tx := range snapshot.Transactions {
+		if tx.TemplateID != nil && *tx.TemplateID == recurring.ID {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("snapshot transaction missing template_id: %+v", snapshot.Transactions)
+	}
+
+	// Rename the template + change its category, then sync: linked txn's name & category follow,
+	// but the amount stays untouched.
+	cat2 := decode[Category](t, request(t, client, http.MethodPost, server.URL+"/api/categories", Category{Name: "Utilities", Type: "expense", Budget: 1_000_000, Icon: "bolt"}))
+	renamed := decode[RecurringTemplate](t, request(t, client, http.MethodPut, server.URL+"/api/recurring/"+recurring.ID, RecurringTemplate{ID: recurring.ID, Name: "Fiber", CategoryID: cat2.ID, DefaultAmount: 400_000, DueDay: 10, Frequency: "monthly", Icon: "wifi"}))
+	if renamed.Name != "Fiber" {
+		t.Fatalf("template rename failed: %+v", renamed)
+	}
+	synced := decode[[]Transaction](t, request(t, client, http.MethodPost, server.URL+"/api/recurring/"+recurring.ID+"/sync", nil))
+	if len(synced) != 1 || synced[0].Merchant != "Fiber" || synced[0].CategoryID == nil || *synced[0].CategoryID != cat2.ID {
+		t.Fatalf("sync did not update name/category: %+v", synced)
+	}
+	if synced[0].Amount != 400_000 {
+		t.Fatalf("sync must not rewrite amount: %+v", synced[0])
 	}
 }
 

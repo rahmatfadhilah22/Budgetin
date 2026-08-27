@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBudget } from '../context/BudgetContext';
-import { Checkbox, Select } from './controls';
+import { Checkbox, Select, DatePicker } from './controls';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -24,6 +24,13 @@ export const QuickAddModal: React.FC = () => {
 
   const expenseCategories = categories.filter((c) => c.type === 'expense');
 
+  // Live thousands separator: store the formatted string ("1.500.000"), strip separators on save.
+  const formatInt = (n: number) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
+  const handleAmountChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    setAmountStr(digits ? formatInt(parseInt(digits, 10)) : '');
+  };
+
   // Reset when opening and when the category list arrives after boot.
   useEffect(() => {
     if (quickAddOpen) {
@@ -44,7 +51,7 @@ export const QuickAddModal: React.FC = () => {
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (submitting) return;
-    const parsedAmount = Math.round(parseFloat(amountStr) || 0);
+    const parsedAmount = parseInt(amountStr.replace(/\D/g, ''), 10) || 0;
     if (parsedAmount <= 0 && !isDraft) {
       setError('Please enter an amount greater than 0.');
       return;
@@ -70,7 +77,10 @@ export const QuickAddModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs animate-in fade-in duration-150"
+      onClick={() => setQuickAddOpen(false)}
+    >
       <div
         className="bg-surface-soft w-full max-w-[480px] rounded-2xl border border-hairline p-6 md:p-8 flex flex-col gap-6 shadow-2xl relative animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
@@ -122,12 +132,11 @@ export const QuickAddModal: React.FC = () => {
             <span className="text-3xl font-medium text-muted">Rp</span>
             <input
               autoFocus
-              type="number"
+              type="text"
               inputMode="numeric"
-              step="1"
-              min="1"
+              autoComplete="off"
               value={amountStr}
-              onChange={(e) => setAmountStr(e.target.value)}
+              onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="0"
               className="bg-transparent border-none p-0 focus:ring-0 font-display text-4xl font-semibold text-ink w-full outline-none"
               onKeyDown={(e) => {
@@ -174,12 +183,7 @@ export const QuickAddModal: React.FC = () => {
             </div>
             <div className="col-span-1">
               <label className="text-xs font-semibold text-muted">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-canvas border border-hairline rounded-lg p-2 text-sm text-ink focus:border-ink outline-none mt-1"
-              />
+              <DatePicker value={date} onChange={setDate} className="w-full mt-1" />
             </div>
           </div>
 

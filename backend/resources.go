@@ -29,6 +29,7 @@ type Transaction struct {
 	IsRecurring bool    `json:"isRecurring"`
 	Note        *string `json:"note,omitempty"`
 	CreatedAt   int64   `json:"createdAt"`
+	TemplateID  *string `json:"templateId,omitempty"`
 }
 
 type RecurringTemplate struct {
@@ -150,13 +151,13 @@ func (a *app) snapshot() (Snapshot, error) {
 		return out, err
 	}
 
-	rows, err = a.db.Query("SELECT id, merchant, amount, category_id, occurred_on, type, is_draft, is_recurring, note, created_at FROM transactions ORDER BY created_at DESC")
+	rows, err = a.db.Query("SELECT id, merchant, amount, category_id, occurred_on, type, is_draft, is_recurring, note, created_at, template_id FROM transactions ORDER BY created_at DESC")
 	if err != nil {
 		return out, err
 	}
 	for rows.Next() {
 		var t Transaction
-		if err := rows.Scan(&t.ID, &t.Merchant, &t.Amount, &t.CategoryID, &t.Date, &t.Type, &t.IsDraft, &t.IsRecurring, &t.Note, &t.CreatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.Merchant, &t.Amount, &t.CategoryID, &t.Date, &t.Type, &t.IsDraft, &t.IsRecurring, &t.Note, &t.CreatedAt, &t.TemplateID); err != nil {
 			rows.Close()
 			return out, err
 		}
@@ -414,8 +415,8 @@ func (a *app) logRecurring(w http.ResponseWriter, r *http.Request) {
 	}
 	today := time.Now().Format("2006-01-02")
 	note := "Recurring payment for " + rec.Name
-	payment := Transaction{ID: id, Merchant: rec.Name, Amount: rec.DefaultAmount, CategoryID: &rec.CategoryID, Date: today, Type: "expense", IsRecurring: true, Note: &note, CreatedAt: time.Now().UnixMilli()}
-	if _, err = tx.Exec("INSERT INTO transactions(id,merchant,amount,category_id,occurred_on,type,is_draft,is_recurring,note,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)", payment.ID, payment.Merchant, payment.Amount, payment.CategoryID, payment.Date, payment.Type, false, true, payment.Note, payment.CreatedAt); err != nil {
+	payment := Transaction{ID: id, Merchant: rec.Name, Amount: rec.DefaultAmount, CategoryID: &rec.CategoryID, Date: today, Type: "expense", IsRecurring: true, Note: &note, CreatedAt: time.Now().UnixMilli(), TemplateID: &rec.ID}
+	if _, err = tx.Exec("INSERT INTO transactions(id,merchant,amount,category_id,occurred_on,type,is_draft,is_recurring,note,created_at,template_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)", payment.ID, payment.Merchant, payment.Amount, payment.CategoryID, payment.Date, payment.Type, false, true, payment.Note, payment.CreatedAt, payment.TemplateID); err != nil {
 		writeError(w, 500, "could not log recurring payment")
 		return
 	}
@@ -429,6 +430,48 @@ func (a *app) logRecurring(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 201, recurringLogResult{payment, rec})
+}
+
+// syncRecurring aligns a template's linked transactions with its current name & category.
+// Amounts are deliberately untouched — historical payments are never rewritten.
+func (a *app) syncRecurring(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var rec RecurringTemplate
+	if err := a.db.QueryRow("SELECT id,name,category_id FROM recurring_templates WHERE id=?", id).Scan(&rec.ID, &rec.Name, &rec.CategoryID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, 404, "recurring template not found")
+		} else {
+			writeError(w, 500, "could not sync recurring")
+		}
+		return
+	}
+	if _, err := a.db.Exec("UPDATE transactions SET merchant=?, category_id=? WHERE template_id=?", rec.Name, rec.CategoryID, id); err != nil {
+		writeError(w, 500, "could not sync recurring")
+		return
+	}
+	txs, err := a.transactionsForTemplate(id)
+	if err != nil {
+		writeError(w, 500, "could not sync recurring")
+		return
+	}
+	writeJSON(w, 200, txs)
+}
+
+func (a *app) transactionsForTemplate(id string) ([]Transaction, error) {
+	rows, err := a.db.Query("SELECT id, merchant, amount, category_id, occurred_on, type, is_draft, is_recurring, note, created_at, template_id FROM transactions WHERE template_id=?", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Transaction
+	for rows.Next() {
+		var t Transaction
+		if err := rows.Scan(&t.ID, &t.Merchant, &t.Amount, &t.CategoryID, &t.Date, &t.Type, &t.IsDraft, &t.IsRecurring, &t.Note, &t.CreatedAt, &t.TemplateID); err != nil {
+			return nil, err
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
 }
 
 func (a *app) updateSettings(w http.ResponseWriter, r *http.Request) {

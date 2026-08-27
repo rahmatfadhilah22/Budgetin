@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext';
 import { Transaction } from '../../types';
 import { formatDate } from '../../date';
-import { Select } from '../controls';
+import { Select, ConfirmDialog } from '../controls';
 
 export const TransactionsView: React.FC = () => {
   const {
@@ -28,6 +28,8 @@ export const TransactionsView: React.FC = () => {
   // Per-card async states
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const getDraftState = (draft: Transaction) => {
@@ -72,13 +74,13 @@ export const TransactionsView: React.FC = () => {
     }
   };
 
-  const handleDeleteTransaction = async (id: string) => {
-    if (deleteId) return;
-    if (!window.confirm('Delete this transaction?')) return;
-    setDeleteId(id);
+  const handleDeleteTransaction = async () => {
+    if (deleteId || !confirmId) return;
+    setDeleteId(confirmId);
     setActionError(null);
     try {
-      await deleteTransaction(id);
+      await deleteTransaction(confirmId);
+      setConfirmOpen(false);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Could not delete transaction');
     } finally {
@@ -265,7 +267,7 @@ export const TransactionsView: React.FC = () => {
                           type="button"
                           title="Delete draft"
                           disabled={isDeleting}
-                          onClick={() => handleDeleteTransaction(draft.id)}
+                          onClick={() => { setConfirmId(draft.id); setConfirmOpen(true); }}
                           className="p-2 border border-hairline hover:bg-surface-soft text-muted-soft hover:text-error rounded-lg transition-colors cursor-pointer disabled:opacity-60"
                         >
                           <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -372,7 +374,7 @@ export const TransactionsView: React.FC = () => {
                       {formatCurrency(tx.amount)}
                     </span>
                     <button
-                      onClick={() => handleDeleteTransaction(tx.id)}
+                      onClick={() => { setConfirmId(tx.id); setConfirmOpen(true); }}
                       disabled={deleteId === tx.id}
                       title="Delete"
                       className="opacity-0 group-hover:opacity-100 p-1 text-muted-soft hover:text-error rounded transition-all cursor-pointer disabled:opacity-40"
@@ -386,6 +388,15 @@ export const TransactionsView: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete transaction?"
+        message="Delete this transaction? This cannot be undone."
+        busy={!!deleteId}
+        onConfirm={handleDeleteTransaction}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 };

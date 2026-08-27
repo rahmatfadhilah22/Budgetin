@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { getCycle, shiftCycle, formatRange } from './cycle';
+import { getCycle, shiftCycle, formatRange, cycleYear } from './cycle';
 
 function check(label: string, actual: { start: string; end: string }, start: string, end: string) {
   assert.deepStrictEqual(actual, { start, end }, label);
@@ -21,6 +21,18 @@ check('week', getCycle('weekly', 25, '2026-08-27'), '2026-08-24', '2026-08-30');
 check('shift+1', shiftCycle('monthly', 25, getCycle('monthly', 25, '2026-08-27'), 1), '2026-09-25', '2026-10-24');
 // shift -1 weekly
 check('shift-1w', shiftCycle('weekly', 25, getCycle('weekly', 25, '2026-08-27'), -1), '2026-08-17', '2026-08-23');
+// shift 0 is identity
+check('shift0', shiftCycle('monthly', 1, getCycle('monthly', 1, '2026-08-27'), 0), '2026-08-01', '2026-08-31');
+// shift +2 does not collapse (regression: any |delta|>1 returned the same ±1 cycle)
+check('shift+2', shiftCycle('monthly', 1, getCycle('monthly', 1, '2026-08-27'), 2), '2026-10-01', '2026-10-31');
+check('shift-2', shiftCycle('monthly', 1, getCycle('monthly', 1, '2026-08-27'), -2), '2026-06-01', '2026-06-30');
+check('shift+2c', shiftCycle('monthly', 25, getCycle('monthly', 25, '2026-08-27'), 2), '2026-10-25', '2026-11-24');
+// multi-step weekly
+check('shift+2w', shiftCycle('weekly', 25, getCycle('weekly', 25, '2026-08-27'), 2), '2026-09-07', '2026-09-13');
+check('shift-2w', shiftCycle('weekly', 25, getCycle('weekly', 25, '2026-08-27'), -2), '2026-08-10', '2026-08-16');
 
-console.log('formatRange:', formatRange('2026-08-25', '2026-09-24'));
+assert.strictEqual(formatRange('2026-08-25', '2026-09-24'), '25 Agu – 24 Sep');
+assert.strictEqual(cycleYear('2026-08-25', '2026-09-24'), '2026');
+assert.strictEqual(cycleYear('2026-12-25', '2027-01-24'), '2026 – 2027');
+console.log('formatRange:', formatRange('2026-08-25', '2026-09-24'), '| cycleYear:', cycleYear('2026-12-25', '2027-01-24'));
 console.log('cycle self-check passed');

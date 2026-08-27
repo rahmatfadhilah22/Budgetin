@@ -24,6 +24,8 @@ export interface Transaction {
   isRecurring?: boolean;
   note?: string;
   createdAt: number;
+  /** Set when the transaction was created by logging a recurring template. */
+  templateId?: string;
 }
 
 export interface RecurringTemplate {
