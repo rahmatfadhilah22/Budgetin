@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext';
 import { Transaction } from '../../types';
 import { formatDate } from '../../date';
-import { Select, ConfirmDialog } from '../controls';
+import { Select, ConfirmDialog, DatePicker } from '../controls';
 
 export const TransactionsView: React.FC = () => {
   const {
@@ -11,6 +11,7 @@ export const TransactionsView: React.FC = () => {
     categories,
     completeDraft,
     deleteTransaction,
+    updateTransaction,
     formatCurrency,
     setQuickAddOpen,
   } = useBudget();
@@ -19,6 +20,15 @@ export const TransactionsView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<'all' | 'expense' | 'income'>('all');
+
+  // Edit-transaction modal state
+  const [editing, setEditing] = useState<Transaction | null>(null);
+  const [editMerchant, setEditMerchant] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editNote, setEditNote] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Draft review card internal draft selection states
   const [draftSelections, setDraftSelections] = useState<{
@@ -85,6 +95,49 @@ export const TransactionsView: React.FC = () => {
       setActionError(err instanceof Error ? err.message : 'Could not delete transaction');
     } finally {
       setDeleteId(null);
+    }
+  };
+
+  // Live thousands separator for the edit-amount field.
+  const formatInt = (n: number) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
+  const handleEditAmountChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '');
+    setEditAmount(digits ? formatInt(parseInt(digits, 10)) : '');
+  };
+
+  const openEdit = (tx: Transaction) => {
+    setEditing(tx);
+    setEditMerchant(tx.merchant);
+    setEditAmount(formatInt(tx.amount));
+    setEditCategory(tx.categoryId ?? '');
+    setEditDate(tx.date);
+    setEditNote(tx.note ?? '');
+    setActionError(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (savingEdit || !editing) return;
+    const amountVal = parseInt(editAmount.replace(/\D/g, ''), 10) || 0;
+    if (amountVal <= 0) {
+      setActionError('Amount must be greater than 0.');
+      return;
+    }
+    setSavingEdit(true);
+    setActionError(null);
+    try {
+      await updateTransaction(editing.id, {
+        merchant: editMerchant.trim() || 'Unknown Merchant',
+        amount: amountVal,
+        categoryId: editCategory || undefined,
+        date: editDate,
+        note: editNote.trim() || undefined,
+      });
+      setEditing(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not update transaction');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -374,6 +427,14 @@ export const TransactionsView: React.FC = () => {
                       {formatCurrency(tx.amount)}
                     </span>
                     <button
+                      onClick={() => openEdit(tx)}
+                      disabled={deleteId === tx.id}
+                      title="Edit"
+                      className="opacity-0 group-hover:opacity-100 p-1 text-muted-soft hover:text-ink rounded transition-all cursor-pointer disabled:opacity-40"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                    <button
                       onClick={() => { setConfirmId(tx.id); setConfirmOpen(true); }}
                       disabled={deleteId === tx.id}
                       title="Delete"
@@ -397,6 +458,92 @@ export const TransactionsView: React.FC = () => {
         onConfirm={handleDeleteTransaction}
         onCancel={() => setConfirmOpen(false)}
       />
+
+      {/* Edit Transaction Modal */}
+      {editing && (
+        <div
+          className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onMouseDown={() => setEditing(null)}
+        >
+          <div
+            className="bg-surface-soft w-full max-w-[480px] rounded-2xl border border-hairline p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center pb-2 border-b border-hairline">
+              <h3 className="font-display text-xl font-medium text-ink tracking-tight">Edit Transaction</h3>
+              <button onClick={() => setEditing(null)} className="text-muted hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
+                <span className="material-symbols-outlined text-[22px]">close</span>
+              </button>
+            </div>
+
+            {actionError && <p role="alert" aria-live="polite" className="text-xs font-semibold text-error">{actionError}</p>}
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Merchant</label>
+                <input
+                  type="text"
+                  value={editMerchant}
+                  onChange={(e) => setEditMerchant(e.target.value)}
+                  className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-semibold text-ink focus:border-ink outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Amount</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={editAmount}
+                  onChange={(e) => handleEditAmountChange(e.target.value)}
+                  className="w-full bg-canvas border border-hairline rounded-lg p-2.5 font-display text-xl font-semibold text-ink focus:border-ink outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Category</label>
+                  <Select
+                    className="w-full"
+                    value={editCategory}
+                    onChange={setEditCategory}
+                    options={[
+                      { value: '', label: 'Uncategorized' },
+                      ...categories.map((c) => ({ value: c.id, label: c.name })),
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Date</label>
+                  <DatePicker value={editDate} onChange={setEditDate} className="w-full" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Note</label>
+                <input
+                  type="text"
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                  placeholder="Optional"
+                  className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-semibold text-ink focus:border-ink outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingEdit}
+                className={`w-full py-3 font-semibold text-sm rounded-xl transition-all cursor-pointer shadow-sm ${
+                  savingEdit ? 'bg-primary-disabled text-muted cursor-not-allowed' : 'bg-primary text-on-primary hover:bg-primary-active active:scale-98'
+                }`}
+              >
+                {savingEdit ? 'Saving…' : 'Save Changes'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
 	"errors"
@@ -472,6 +473,37 @@ func (a *app) transactionsForTemplate(id string) ([]Transaction, error) {
 		out = append(out, t)
 	}
 	return out, rows.Err()
+}
+
+// resetPassword sets a new password without the current one, guarded by a RESET_KEY
+// env secret. Only available when RESET_KEY is configured.
+func (a *app) resetPassword(w http.ResponseWriter, r *http.Request) {
+	if a.resetKey == "" {
+		writeError(w, http.StatusNotFound, "password reset is not configured")
+		return
+	}
+	var body struct {
+		Key string `json:"key"`
+		New string `json:"new"`
+	}
+	if err := decodeJSON(w, r, &body); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if subtle.ConstantTimeCompare([]byte(a.resetKey), []byte(body.Key)) != 1 {
+		writeError(w, http.StatusUnauthorized, "invalid reset key")
+		return
+	}
+	if len(body.New) < 8 {
+		writeError(w, http.StatusBadRequest, "new password must be at least 8 characters")
+		return
+	}
+	if err := a.passwords.set(body.New); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not reset password")
+		return
+	}
+	a.sessions.clearExcept("") // log everyone out
+	writeJSON(w, http.StatusOK, map[string]bool{"reset": true})
 }
 
 // changePassword replaces the login password. Must supply the current password;

@@ -19,17 +19,19 @@ type app struct {
 	db           *sql.DB
 	passwordHash [32]byte
 	passwords    *passwordStore
+	resetKey     string
 	sessions     *sessionStore
 	secureCookie bool
 	distDir      string
 	handler      http.Handler
 }
 
-func newApp(db *sql.DB, password string, secureCookie bool, distDir string) *app {
+func newApp(db *sql.DB, password string, secureCookie bool, distDir string, resetKey string) *app {
 	a := &app{
 		db:           db,
 		passwordHash: sha256.Sum256([]byte(password)),
 		passwords:    &passwordStore{db: db},
+		resetKey:     resetKey,
 		sessions:     newSessionStore(),
 		secureCookie: secureCookie,
 		distDir:      distDir,
@@ -39,6 +41,7 @@ func newApp(db *sql.DB, password string, secureCookie bool, distDir string) *app
 	public.HandleFunc("GET /api/health", a.health)
 	public.HandleFunc("GET /api/session", a.session)
 	public.HandleFunc("POST /api/login", a.login)
+	public.HandleFunc("POST /api/reset-password", a.resetPassword)
 
 	protected := http.NewServeMux()
 	protected.HandleFunc("POST /api/logout", a.logout)
@@ -58,7 +61,8 @@ func newApp(db *sql.DB, password string, secureCookie bool, distDir string) *app
 	protected.HandleFunc("POST /api/settings/password", a.changePassword)
 
 	a.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/health" || r.URL.Path == "/api/session" || r.URL.Path == "/api/login" {
+		switch r.URL.Path {
+		case "/api/health", "/api/session", "/api/login", "/api/reset-password":
 			public.ServeHTTP(w, r)
 			return
 		}

@@ -18,7 +18,7 @@ func newTestServer(t *testing.T, secure bool) (*httptest.Server, *http.Client) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := httptest.NewServer(newApp(db, testPassword, secure, ""))
+	server := httptest.NewServer(newApp(db, testPassword, secure, "", ""))
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -245,6 +245,55 @@ func TestChangePassword(t *testing.T) {
 	resp = request(t, client, http.MethodPost, server.URL+"/api/login", map[string]string{"password": "newpass123"})
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("new password rejected status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+}
+
+func TestResetPassword(t *testing.T) {
+	db, err := openDB(filepath.Join(t.TempDir(), "budget.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	server := httptest.NewServer(newApp(db, testPassword, false, "", "secret-key"))
+	defer server.Close()
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := server.Client()
+	client.Jar = jar
+
+	// Wrong reset key rejected.
+	resp := request(t, client, http.MethodPost, server.URL+"/api/reset-password", map[string]string{"key": "wrong", "new": "resetpass1"})
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("wrong key status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Too-short new password rejected.
+	resp = request(t, client, http.MethodPost, server.URL+"/api/reset-password", map[string]string{"key": "secret-key", "new": "short"})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("short status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// Reset succeeds with correct key.
+	resp = request(t, client, http.MethodPost, server.URL+"/api/reset-password", map[string]string{"key": "secret-key", "new": "resetpass1"})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("reset status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// New password works, old env password does not.
+	resp = request(t, client, http.MethodPost, server.URL+"/api/login", map[string]string{"password": "resetpass1"})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("reset password rejected status=%d", resp.StatusCode)
+	}
+	resp.Body.Close()
+	resp = request(t, client, http.MethodPost, server.URL+"/api/login", map[string]string{"password": testPassword})
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("old password accepted after reset status=%d", resp.StatusCode)
 	}
 	resp.Body.Close()
 }

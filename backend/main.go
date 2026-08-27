@@ -68,7 +68,7 @@ func main() {
 	}
 	server := &http.Server{
 		Addr:              ":" + port,
-		Handler:           newApp(db, password, os.Getenv("APP_ENV") == "production", "./dist"),
+		Handler:           newApp(db, password, os.Getenv("APP_ENV") == "production", "./dist", os.Getenv("RESET_KEY")),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      30 * time.Second,
