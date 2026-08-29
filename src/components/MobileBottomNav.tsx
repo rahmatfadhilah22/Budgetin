@@ -8,6 +8,7 @@ export const MobileBottomNav: React.FC = () => {
   const items: { id: ViewType; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
     { id: 'transactions', label: 'Transactions', icon: 'receipt_long', badge: draftCount },
+    { id: 'recurring', label: 'Recurring', icon: 'repeat' },
     { id: 'categories', label: 'Categories', icon: 'category' },
     { id: 'settings', label: 'Settings', icon: 'settings' },
   ];
@@ -25,14 +26,14 @@ export const MobileBottomNav: React.FC = () => {
       </button>
 
       {/* Mobile Bottom Nav Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface-dark border-t border-[#2a2823] z-40 h-18 flex items-center justify-around px-2 shadow-sm">
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface-dark border-t border-[#2a2823] z-40 h-18 flex items-center px-2 shadow-sm">
         {items.map((item) => {
           const isActive = currentView === item.id;
           return (
             <button
               key={item.id}
               onClick={() => navigateView(item.id)}
-              className={`flex flex-col items-center justify-center w-16 h-full cursor-pointer transition-colors relative ${
+              className={`flex flex-col items-center justify-center flex-1 min-w-0 h-full cursor-pointer transition-colors relative ${
                 isActive ? 'text-primary font-semibold' : 'text-on-dark-soft hover:text-on-dark'
               }`}
             >
@@ -50,7 +51,7 @@ export const MobileBottomNav: React.FC = () => {
                   </span>
                 ) : null}
               </div>
-              <span className="text-[11px] mt-1">{item.label}</span>
+              <span className="text-[11px] mt-1 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">{item.label}</span>
             </button>
           );
         })}
