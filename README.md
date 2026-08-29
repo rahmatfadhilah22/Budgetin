@@ -1,6 +1,6 @@
 # Budgetin
 
-Aplikasi budget / personal finance **monolith** — satu server Go yang melayani REST API dan hasil build React, dengan data tersimpan di SQLite. Single user dengan login password. Tanpa data demo: database baru selalu dimulai kosong.
+Aplikasi budget / personal finance **monolith** — satu server Go yang melayani REST API dan hasil build React, dengan data tersimpan di SQLite. Single user dengan login password.
 
 ## Arsitektur singkat
 
@@ -254,33 +254,3 @@ image: ghcr.io/rahmatfadhilah22/budgetin:latest
 ```
 
 Set env `APP_PASSWORD` + `APP_ENV=production`, dan persist volume `/app/data` untuk SQLite. Port container `8080`.
-
----
-
-## Catatan keamanan & batasan (jujur)
-
-- Satu password, **session disimpan in-memory** — restart server / container membuat semua session logout (perlu login ulang). Tidak ada refresh token; cukup untuk satu pengguna.
-- Login memakai pembandingan waktu-konstan dan delay kecil pada kegagalan.
-- Body request dibatasi (1 MB), JSON dengan field tak dikenal ditolak, dan query SQL menggunakan parameter — tanpa concatenation input pengguna.
-- Menghapus kategori yang masih dipakai transaksi/recurring **ditolak** (409) agar tidak ada referensi menggantung; pindahkan/hapus transaksinya dulu.
-- Semua nominal integer Rupiah — tidak ada fitur multi-mata uang.
-
-## Troubleshooting
-
-| Gejala | Penyebab / Solusi |
-|---|---|
-| Backend `FATAL: APP_PASSWORD must contain at least 12 characters` | `APP_PASSWORD` tidak diset / terlalu pendek. |
-| Login selalu gagal | Password salah — bandingkan dengan nilai env yang dipakai server. |
-| UI tidak bisa memuat data (401) | Cookie session hilang/expired — logout lalu login ulang. |
-| Port 8080/3000 sudah terpakai | Ganti via `PORT` (backend) atau `vite --port` (frontend). |
-| Perubahan tidak tersimpan setelah refresh | Pastikan backend yang sama masih berjalan; semua data ada di SQLite backend, bukan browser. |
-
-## Development: menjalankan test & build
-
-```bash
-# Backend (test integration: auth, CRUD, validasi, persistensi)
-cd backend && go test ./... && go vet ./...
-
-# Frontend (type-check + production build)
-npm run lint && npm run build
-```
