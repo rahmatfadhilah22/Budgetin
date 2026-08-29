@@ -17,6 +17,7 @@ import {
 } from '../types';
 import { api, ApiError } from '../api';
 import { getCycle, shiftCycle, formatRange, cycleYear, type Cycle } from '../cycle';
+import { makeT, type Lang, type TKey } from '../i18n';
 
 export type AuthStatus = 'checking' | 'anonymous' | 'authenticated';
 
@@ -53,6 +54,11 @@ interface BudgetContextType {
   setPeriod: (p: PeriodType) => void;
   cycleDateRange: string;
   cycleYearLabel: string;
+
+  // Language (i18n)
+  language: Lang;
+  setLanguage: (lang: Lang) => void;
+  t: (key: TKey, params?: Record<string, string | number>) => string;
 
   // Active budget cycle
   activeCycle: Cycle;
@@ -137,6 +143,16 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [locked, setLocked] = useState(true);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
 
+  // Language preference — client-side only, persists like the welcome flag.
+  const [language, setLanguageState] = useState<Lang>(() =>
+    localStorage.getItem('budget_lang') === 'id' ? 'id' : 'en'
+  );
+  const setLanguage = useCallback((lang: Lang) => {
+    setLanguageState(lang);
+    localStorage.setItem('budget_lang', lang);
+  }, []);
+  const t = useMemo(() => makeT(language), [language]);
+
   const loadData = useCallback(async () => {
     const snapshot = await api<BudgetSnapshot>('/api/data');
     setData(snapshot);
@@ -174,9 +190,9 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       await loadData();
       setAuthStatus('authenticated');
     } catch (error) {
-      setBootError(error instanceof ApiError ? error.message : 'Could not load data');
+      setBootError(error instanceof ApiError ? error.message : t('common.loadError'));
     }
-  }, [loadData]);
+  }, [loadData, t]);
 
   const login = useCallback(async (password: string) => {
     await api<{ authenticated: boolean }>('/api/login', {
@@ -450,6 +466,9 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setPeriod,
         cycleDateRange,
         cycleYearLabel,
+        language,
+        setLanguage,
+        t,
         activeCycle,
         cycleTransactions,
         prevCycle,

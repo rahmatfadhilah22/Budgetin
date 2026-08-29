@@ -3,29 +3,21 @@ import { useBudget } from '../context/BudgetContext';
 
 const WELCOME_KEY = 'budget_welcome_seen';
 
-const STEPS = [
-  {
-    icon: 'calendar_month',
-    title: 'Budget cycles',
-    body: 'Your budget runs in cycles — monthly or weekly. Use the ◀ ▶ arrows in the header to browse past and future periods, and set the start day in Settings.',
-  },
-  {
-    icon: 'bolt',
-    title: 'Quick Add & drafts',
-    body: 'Quick Add logs a transaction in seconds. Skip choosing a category and it is saved as a draft — the bell icon shows how many drafts need attention.',
-  },
-  {
-    icon: 'event_repeat',
-    title: 'Recurring templates',
-    body: 'Recurring templates remind you of scheduled bills each cycle. When you pay one, mark it as paid so your balance stays accurate.',
-  },
+type T = (key: import('../i18n').TKey) => string;
+
+const steps = (t: T) => [
+  { icon: 'calendar_month', title: t('welcome.step1.title'), body: t('welcome.step1.body') },
+  { icon: 'bolt', title: t('welcome.step2.title'), body: t('welcome.step2.body') },
+  { icon: 'event_repeat', title: t('welcome.step3.title'), body: t('welcome.step3.body') },
 ];
 
 export const WelcomeModal: React.FC = () => {
-  const { welcomeOpen, setWelcomeOpen } = useBudget();
+  const { welcomeOpen, setWelcomeOpen, t } = useBudget();
   const [step, setStep] = useState(0);
 
   if (!welcomeOpen) return null;
+
+  const STEPS = steps(t);
 
   const close = () => {
     localStorage.setItem(WELCOME_KEY, '1');
@@ -40,7 +32,7 @@ export const WelcomeModal: React.FC = () => {
     <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
       <div className="bg-surface-soft w-full max-w-[420px] rounded-2xl border border-hairline p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
         <div className="flex justify-between items-center pb-2 border-b border-hairline">
-          <h3 className="font-display text-lg font-medium text-ink">Welcome to Budget</h3>
+          <h3 className="font-display text-lg font-medium text-ink">{t('welcome.title')}</h3>
           <button onClick={close} className="text-muted-soft hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
@@ -65,13 +57,13 @@ export const WelcomeModal: React.FC = () => {
 
         <div className="flex items-center justify-between pt-1">
           <button onClick={close} className="text-xs text-muted hover:text-ink underline underline-offset-2 cursor-pointer">
-            Skip
+            {t('welcome.skip')}
           </button>
           <button
             onClick={() => (isLast ? close() : setStep((s) => s + 1))}
             className="px-5 py-2.5 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary-active active:scale-98 transition-all cursor-pointer shadow-sm"
           >
-            {isLast ? 'Done' : 'Next'}
+            {isLast ? t('welcome.done') : t('welcome.next')}
           </button>
         </div>
       </div>

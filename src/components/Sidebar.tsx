@@ -3,14 +3,14 @@ import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
 export const Sidebar: React.FC = () => {
-  const { currentView, navigateView, setQuickAddOpen, draftCount, unpaidRecurring, settings } = useBudget();
+  const { currentView, navigateView, setQuickAddOpen, draftCount, unpaidRecurring, settings, t } = useBudget();
 
   const navItems: { id: ViewType; label: string; icon: string; badge?: number }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { id: 'transactions', label: 'Transactions', icon: 'receipt_long', badge: draftCount },
-    { id: 'recurring', label: 'Recurring', icon: 'event_repeat', badge: unpaidRecurring.length },
-    { id: 'categories', label: 'Categories', icon: 'category' },
-    { id: 'settings', label: 'Settings', icon: 'settings' },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: 'dashboard' },
+    { id: 'transactions', label: t('nav.transactions'), icon: 'receipt_long', badge: draftCount },
+    { id: 'recurring', label: t('nav.recurring'), icon: 'event_repeat', badge: unpaidRecurring.length },
+    { id: 'categories', label: t('nav.categories'), icon: 'category' },
+    { id: 'settings', label: t('nav.settings'), icon: 'settings' },
   ];
 
   const initials = settings.name.trim().slice(0, 1).toUpperCase() || 'U';
@@ -19,10 +19,10 @@ export const Sidebar: React.FC = () => {
     <aside className="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-surface-dark text-on-dark flex-col p-4 space-y-2 z-40 border-r border-[#2a2823]">
       {/* Brand Header */}
       <div className="flex items-center space-x-3 mb-6 mt-1 px-2">
-        <img src="/logo.svg" alt="Budget" className="w-10 h-10 shrink-0" />
+        <img src="/logo.svg" alt={t('app.name')} className="w-10 h-10 shrink-0" />
         <div>
-          <h1 className="text-xl font-bold text-on-dark leading-tight tracking-tight">Budget</h1>
-          <p className="text-xs text-on-dark-soft">Personal Finance</p>
+          <h1 className="text-xl font-bold text-on-dark leading-tight tracking-tight">{t('app.name')}</h1>
+          <p className="text-xs text-on-dark-soft">{t('app.tagline')}</p>
         </div>
       </div>
 
@@ -33,7 +33,7 @@ export const Sidebar: React.FC = () => {
         className="w-full bg-primary text-on-primary hover:bg-primary-active active:scale-95 transition-all duration-150 rounded-lg py-2.5 px-4 mb-4 flex items-center justify-center space-x-2 font-medium text-sm shadow-sm cursor-pointer"
       >
         <span className="material-symbols-outlined text-[18px]">add</span>
-        <span>Quick Add</span>
+        <span>{t('common.quickAdd')}</span>
       </button>
 
       {/* Navigation List */}
@@ -84,8 +84,8 @@ export const Sidebar: React.FC = () => {
             {initials}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-on-dark truncate">{settings.name || 'User'}</p>
-            <p className="text-[11px] text-on-dark-soft truncate">{settings.email || 'Local account'}</p>
+            <p className="text-xs font-semibold text-on-dark truncate">{settings.name || t('common.user')}</p>
+            <p className="text-[11px] text-on-dark-soft truncate">{settings.email || t('common.localAccount')}</p>
           </div>
         </div>
       </div>

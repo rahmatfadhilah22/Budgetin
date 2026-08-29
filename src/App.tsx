@@ -22,7 +22,9 @@ const BootLoading: React.FC = () => (
   </div>
 );
 
-const BootError: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => (
+const BootError: React.FC<{ message: string; onRetry: () => void }> = ({ message, onRetry }) => {
+  const { t } = useBudget();
+  return (
   <div className="min-h-screen bg-canvas text-ink flex items-center justify-center p-4">
     <div className="bg-surface-card border border-hairline rounded-2xl p-6 max-w-sm w-full text-center space-y-4">
       <span className="material-symbols-outlined text-3xl text-error">error</span>
@@ -31,11 +33,12 @@ const BootError: React.FC<{ message: string; onRetry: () => void }> = ({ message
         onClick={onRetry}
         className="w-full py-2.5 rounded-lg bg-primary text-on-primary font-semibold text-sm hover:bg-primary-active transition-colors cursor-pointer"
       >
-        Retry
+        {t('common.retry')}
       </button>
     </div>
   </div>
-);
+  );
+};
 
 const MainLayout: React.FC = () => {
   const { currentView, authStatus, bootError, retry, locked } = useBudget();

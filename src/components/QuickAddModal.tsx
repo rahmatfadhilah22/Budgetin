@@ -10,6 +10,7 @@ export const QuickAddModal: React.FC = () => {
     setQuickAddOpen,
     categories,
     addTransaction,
+    t,
   } = useBudget();
 
   const [amountStr, setAmountStr] = useState<string>('');
@@ -53,14 +54,14 @@ export const QuickAddModal: React.FC = () => {
     if (submitting) return;
     const parsedAmount = parseInt(amountStr.replace(/\D/g, ''), 10) || 0;
     if (parsedAmount <= 0 && !isDraft) {
-      setError('Please enter an amount greater than 0.');
+      setError(t('quickAdd.amountError'));
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
       await addTransaction({
-        merchant: merchant.trim() || 'Unknown Merchant',
+        merchant: merchant.trim() || t('common.unknownMerchant'),
         amount: parsedAmount,
         categoryId: selectedCategoryId || undefined,
         date,
@@ -70,7 +71,7 @@ export const QuickAddModal: React.FC = () => {
       });
       setQuickAddOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save transaction');
+      setError(err instanceof Error ? err.message : t('quickAdd.saveError'));
     } finally {
       setSubmitting(false);
     }
@@ -87,9 +88,9 @@ export const QuickAddModal: React.FC = () => {
       >
         {/* Header */}
         <div className="flex justify-between items-center pb-2 border-b border-hairline">
-          <h2 className="font-display text-xl font-medium text-ink tracking-tight">Quick Add</h2>
+          <h2 className="font-display text-xl font-medium text-ink tracking-tight">{t('quickAdd.title')}</h2>
           <button
-            aria-label="Close"
+            aria-label={t('common.close')}
             onClick={() => setQuickAddOpen(false)}
             className="text-muted hover:text-ink transition-colors p-1.5 rounded-full hover:bg-surface-card cursor-pointer"
           >
@@ -108,7 +109,7 @@ export const QuickAddModal: React.FC = () => {
                 : 'text-muted hover:text-ink'
             }`}
           >
-            Expense
+            {t('type.expense')}
           </button>
           <button
             type="button"
@@ -119,14 +120,14 @@ export const QuickAddModal: React.FC = () => {
                 : 'text-muted hover:text-ink'
             }`}
           >
-            Income
+            {t('type.income')}
           </button>
         </div>
 
         {/* Amount Input */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold text-muted uppercase tracking-wider">
-            Amount (Rp)
+            {t('quickAdd.amount')}
           </label>
           <div className="flex items-baseline gap-2 border-b border-hairline focus-within:border-ink pb-2 transition-colors">
             <span className="text-3xl font-medium text-muted">Rp</span>
@@ -149,11 +150,11 @@ export const QuickAddModal: React.FC = () => {
         {/* Category selector */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold text-muted uppercase tracking-wider">
-            Category
+            {t('quickAdd.category')}
           </label>
           {expenseCategories.length === 0 && type === 'expense' ? (
             <p className="text-xs text-muted">
-              No expense categories yet — add one in Categories first.
+              {t('quickAdd.noExpenseCategories')}
             </p>
           ) : (
             <Select
@@ -172,23 +173,23 @@ export const QuickAddModal: React.FC = () => {
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs font-semibold text-muted">Merchant / Description</label>
+              <label className="text-xs font-semibold text-muted">{t('quickAdd.merchant')}</label>
               <input
                 type="text"
                 value={merchant}
                 onChange={(e) => setMerchant(e.target.value)}
-                placeholder="e.g. Minimarket, Transport"
+                placeholder={t('quickAdd.merchantPh')}
                 className="w-full bg-canvas border border-hairline rounded-lg p-2 text-sm text-ink placeholder:text-muted-soft focus:border-ink outline-none mt-1"
               />
             </div>
             <div className="col-span-1">
-              <label className="text-xs font-semibold text-muted">Date</label>
+              <label className="text-xs font-semibold text-muted">{t('quickAdd.date')}</label>
               <DatePicker value={date} onChange={setDate} className="w-full mt-1" />
             </div>
           </div>
 
           {/* Checkbox: Save as draft */}
-          <Checkbox checked={isDraft} onChange={setIsDraft} label="Save as Incomplete Draft (categorize later)" />
+          <Checkbox checked={isDraft} onChange={setIsDraft} label={t('quickAdd.draftLabel')} />
         </div>
 
         {error && (
@@ -208,7 +209,7 @@ export const QuickAddModal: React.FC = () => {
               : 'bg-primary text-on-primary hover:bg-primary-active active:scale-98'
           }`}
         >
-          {submitting ? 'Saving…' : 'Save Transaction'}
+          {submitting ? t('common.saving') : t('quickAdd.save')}
         </button>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { useBudget } from '../context/BudgetContext';
 import { api, ApiError } from '../api';
 
 export const LoginView: React.FC = () => {
-  const { login } = useBudget();
+  const { login, t } = useBudget();
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +23,7 @@ export const LoginView: React.FC = () => {
     try {
       await login(password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : t('auth.loginFailed'));
       setPassword('');
       setSubmitting(false);
     }
@@ -44,7 +44,7 @@ export const LoginView: React.FC = () => {
       setNewPwd('');
       setResetSuccess(true);
     } catch (err) {
-      setResetError(err instanceof ApiError ? err.message : 'Could not reset password');
+      setResetError(err instanceof ApiError ? err.message : t('auth.resetFailed'));
     } finally {
       setResetSubmitting(false);
     }
@@ -59,8 +59,8 @@ export const LoginView: React.FC = () => {
             B
           </div>
           <div>
-            <h1 className="font-display text-2xl font-medium tracking-tight text-ink leading-tight">Budget</h1>
-            <p className="text-xs text-muted">Personal Finance</p>
+            <h1 className="font-display text-2xl font-medium tracking-tight text-ink leading-tight">{t('app.name')}</h1>
+            <p className="text-xs text-muted">{t('app.tagline')}</p>
           </div>
         </div>
 
@@ -70,13 +70,13 @@ export const LoginView: React.FC = () => {
           className="bg-surface-card border border-hairline rounded-2xl p-6 space-y-5"
         >
           <div>
-            <h2 className="font-display text-xl font-medium text-ink tracking-tight">Sign in</h2>
-            <p className="text-sm text-muted mt-1">Enter your password to open your budget.</p>
+            <h2 className="font-display text-xl font-medium text-ink tracking-tight">{t('auth.signIn')}</h2>
+            <p className="text-sm text-muted mt-1">{t('auth.signInSub')}</p>
           </div>
 
           <div>
             <label htmlFor="password" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-              Password
+              {t('auth.password')}
             </label>
             <input
               id="password"
@@ -105,7 +105,7 @@ export const LoginView: React.FC = () => {
                 : 'bg-primary text-on-primary hover:bg-primary-active active:scale-98 shadow-sm'
             }`}
           >
-            {submitting ? 'Signing in…' : 'Sign in'}
+            {submitting ? t('auth.signingIn') : t('auth.signIn')}
           </button>
 
           <p className="text-center">
@@ -114,7 +114,7 @@ export const LoginView: React.FC = () => {
               onClick={() => { setResetOpen(true); setResetError(null); setResetSuccess(false); }}
               className="text-xs text-muted hover:text-ink underline underline-offset-2 cursor-pointer"
             >
-              Forgot password?
+              {t('auth.forgotPassword')}
             </button>
           </p>
         </form>
@@ -131,7 +131,7 @@ export const LoginView: React.FC = () => {
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center pb-2 border-b border-hairline">
-              <h3 className="font-display text-lg font-medium text-ink">Reset Password</h3>
+              <h3 className="font-display text-lg font-medium text-ink">{t('auth.resetTitle')}</h3>
               <button onClick={() => setResetOpen(false)} className="text-muted-soft hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
@@ -139,13 +139,13 @@ export const LoginView: React.FC = () => {
 
             {resetSuccess && (
               <p className="text-xs font-semibold text-success bg-success/10 border border-success/30 px-3 py-2 rounded-lg">
-                Password reset. You can now sign in with your new password.
+                {t('auth.resetSuccess')}
               </p>
             )}
 
             <form onSubmit={handleReset} className="space-y-4 text-xs">
               <div>
-                <label className="font-semibold text-muted block mb-1">Reset Key</label>
+                <label className="font-semibold text-muted block mb-1">{t('auth.resetKey')}</label>
                 <input
                   type="password"
                   value={resetKey}
@@ -153,10 +153,10 @@ export const LoginView: React.FC = () => {
                   autoComplete="off"
                   className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-medium text-ink focus:border-ink outline-none"
                 />
-                <p className="text-[10px] text-muted-soft mt-1">The recovery key from your server configuration.</p>
+                <p className="text-[10px] text-muted-soft mt-1">{t('auth.resetKeyHint')}</p>
               </div>
               <div>
-                <label className="font-semibold text-muted block mb-1">New Password</label>
+                <label className="font-semibold text-muted block mb-1">{t('auth.newPassword')}</label>
                 <input
                   type="password"
                   value={newPwd}
@@ -164,7 +164,7 @@ export const LoginView: React.FC = () => {
                   autoComplete="new-password"
                   className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-medium text-ink focus:border-ink outline-none"
                 />
-                <p className="text-[10px] text-muted-soft mt-1">At least 8 characters.</p>
+                <p className="text-[10px] text-muted-soft mt-1">{t('auth.minLength8')}</p>
               </div>
 
               {resetError && <p role="alert" aria-live="polite" className="text-xs font-semibold text-error">{resetError}</p>}
@@ -178,7 +178,7 @@ export const LoginView: React.FC = () => {
                     : 'bg-primary text-on-primary hover:bg-primary-active'
                 }`}
               >
-                {resetSubmitting ? 'Resetting…' : 'Reset Password'}
+                {resetSubmitting ? t('auth.resetting') : t('auth.resetTitle')}
               </button>
             </form>
           </div>

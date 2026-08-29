@@ -19,6 +19,7 @@ export const DashboardView: React.FC = () => {
     cycleTransactions,
     prevCycle,
     nextCycle,
+    t,
   } = useBudget();
 
   const [loggingId, setLoggingId] = useState<string | null>(null);
@@ -68,7 +69,7 @@ export const DashboardView: React.FC = () => {
     try {
       await logRecurringPayment(id);
     } catch (err) {
-      setLogError(err instanceof Error ? err.message : 'Could not log payment');
+      setLogError(err instanceof Error ? err.message : t('recurring.logError'));
     } finally {
       setLoggingId(null);
     }
@@ -85,10 +86,10 @@ export const DashboardView: React.FC = () => {
             </span>
             <div>
               <p className="text-sm font-semibold text-body-strong">
-                You have {draftCount} unsaved drafts.
+                {t('dashboard.draftsBanner', { n: draftCount })}
               </p>
               <p className="text-xs text-body hidden sm:block">
-                Incomplete transactions need your attention to keep your budget accurate.
+                {t('dashboard.draftsBannerSub')}
               </p>
             </div>
           </div>
@@ -96,7 +97,7 @@ export const DashboardView: React.FC = () => {
             onClick={() => navigateView('transactions')}
             className="text-xs font-bold text-[#b5790f] hover:underline underline-offset-2 px-2 py-1 cursor-pointer self-start sm:self-auto"
           >
-            Review now →
+            {t('dashboard.reviewNow')}
           </button>
         </div>
       )}
@@ -107,7 +108,7 @@ export const DashboardView: React.FC = () => {
           <div className="flex items-center space-x-3">
             <span className="material-symbols-outlined text-[#b5790f] text-[20px]">event_repeat</span>
             <span className="text-sm font-medium text-body-strong">
-              {unpaidRecurring[0].name} {formatCurrency(unpaidRecurring[0].defaultAmount)} — paid yet?
+              {t('recurring.paidYet', { name: unpaidRecurring[0].name, amount: formatCurrency(unpaidRecurring[0].defaultAmount) })}
             </span>
           </div>
           <button
@@ -115,7 +116,7 @@ export const DashboardView: React.FC = () => {
             disabled={loggingId === unpaidRecurring[0].id}
             className="bg-ink text-canvas hover:bg-body-strong disabled:opacity-60 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
           >
-            {loggingId === unpaidRecurring[0].id ? 'Logging…' : 'Log it now'}
+            {loggingId === unpaidRecurring[0].id ? t('recurring.logging') : t('recurring.logNow')}
           </button>
         </div>
       )}
@@ -135,7 +136,7 @@ export const DashboardView: React.FC = () => {
             e.preventDefault();
             prevCycle();
           }}
-          aria-label="Siklus sebelumnya"
+          aria-label={t('dashboard.prevCycle')}
           className="flex h-8 w-8 shrink-0 select-none touch-manipulation items-center justify-center rounded-full border border-hairline bg-canvas text-body transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
         >
           <span className="material-symbols-outlined text-[18px]">chevron_left</span>
@@ -146,7 +147,7 @@ export const DashboardView: React.FC = () => {
             e.preventDefault();
             nextCycle();
           }}
-          aria-label="Siklus berikutnya"
+          aria-label={t('dashboard.nextCycle')}
           className="flex h-8 w-8 shrink-0 select-none touch-manipulation items-center justify-center rounded-full border border-hairline bg-canvas text-body transition-colors hover:border-muted-soft hover:bg-surface-soft cursor-pointer"
         >
           <span className="material-symbols-outlined text-[18px]">chevron_right</span>
@@ -158,33 +159,33 @@ export const DashboardView: React.FC = () => {
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <div className="bg-surface-card p-6 rounded-2xl border border-hairline flex flex-col justify-between">
           <div>
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Income</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">{t('dashboard.income')}</h2>
             <div className="font-display text-3xl md:text-4xl font-semibold text-ink tracking-tight">
               {formatCurrency(totalIncome)}
             </div>
           </div>
           <div className="mt-4 flex items-center space-x-1.5 text-success">
             <span className="material-symbols-outlined text-sm">trending_up</span>
-            <span className="text-xs font-semibold">This cycle</span>
+            <span className="text-xs font-semibold">{t('dashboard.thisCycle')}</span>
           </div>
         </div>
 
         <div className="bg-surface-card p-6 rounded-2xl border border-hairline flex flex-col justify-between">
           <div>
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Expenses</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">{t('dashboard.expenses')}</h2>
             <div className="font-display text-3xl md:text-4xl font-semibold text-ink tracking-tight">
               {formatCurrency(totalExpenses)}
             </div>
           </div>
           <div className="mt-4 flex items-center space-x-1.5 text-muted">
             <span className="material-symbols-outlined text-sm">horizontal_rule</span>
-            <span className="text-xs font-medium">On track</span>
+            <span className="text-xs font-medium">{t('dashboard.onTrack')}</span>
           </div>
         </div>
 
         <div className="bg-surface-dark text-on-dark p-6 rounded-2xl relative overflow-hidden flex flex-col justify-between">
           <div>
-            <h2 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Remaining</h2>
+            <h2 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">{t('dashboard.remaining')}</h2>
             <div className="font-display text-3xl md:text-4xl font-semibold text-on-dark tracking-tight">
               {formatCurrency(remainingBalance)}
             </div>
@@ -204,19 +205,19 @@ export const DashboardView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 pt-2">
         <section className="lg:col-span-5 space-y-5 bg-surface-card p-5 md:p-6 rounded-2xl border border-hairline">
           <div className="flex justify-between items-center pb-2 border-b border-hairline-soft">
-            <h3 className="font-display text-xl font-medium text-ink tracking-tight">Categories</h3>
+            <h3 className="font-display text-xl font-medium text-ink tracking-tight">{t('nav.categories')}</h3>
             <button
               onClick={() => navigateView('categories')}
               className="text-xs font-semibold text-muted hover:text-ink transition-colors cursor-pointer"
             >
-              Manage →
+              {t('dashboard.manage')}
             </button>
           </div>
 
           {cycleTransactions.length === 0 ? (
-            <p className="text-xs text-muted">Belum ada transaksi di siklus ini.</p>
+            <p className="text-xs text-muted">{t('dashboard.noCycleTransactions')}</p>
           ) : categorySpending.length === 0 ? (
-            <p className="text-xs text-muted">Add expense categories with budgets to track them here.</p>
+            <p className="text-xs text-muted">{t('dashboard.addExpenseCategories')}</p>
           ) : (
             <div className="space-y-4">
               {categorySpending.slice(0, 4).map((cat) => (
@@ -245,17 +246,17 @@ export const DashboardView: React.FC = () => {
         <section className="lg:col-span-7 bg-surface-card p-5 md:p-6 rounded-2xl border border-hairline flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-hairline-soft">
-              <h3 className="font-display text-xl font-medium text-ink tracking-tight">Recent Activity</h3>
+              <h3 className="font-display text-xl font-medium text-ink tracking-tight">{t('dashboard.recentActivity')}</h3>
               <button
                 onClick={() => navigateView('transactions')}
                 className="text-xs font-semibold text-ink underline underline-offset-2 hover:no-underline cursor-pointer"
               >
-                View all
+                {t('dashboard.viewAll')}
               </button>
             </div>
 
             {recentTransactions.length === 0 ? (
-              <p className="text-xs text-muted py-6 text-center">No transactions yet — add your first one.</p>
+              <p className="text-xs text-muted py-6 text-center">{t('dashboard.noTransactions')}</p>
             ) : (
               <div className="divide-y divide-hairline-soft">
                 {recentTransactions.map((tx) => (
@@ -275,7 +276,7 @@ export const DashboardView: React.FC = () => {
                           <span>•</span>
                           <span>{formatDate(tx.date)}</span>
                           {tx.isRecurring && (
-                            <span className="text-[10px] px-1.5 py-0.2 bg-hairline text-muted rounded font-semibold">Recurring</span>
+                            <span className="text-[10px] px-1.5 py-0.2 bg-hairline text-muted rounded font-semibold">{t('common.recurringBadge')}</span>
                           )}
                         </div>
                       </div>
@@ -295,7 +296,7 @@ export const DashboardView: React.FC = () => {
               onClick={() => navigateView('transactions')}
               className="text-xs font-medium text-muted hover:text-ink transition-colors flex items-center space-x-1 cursor-pointer"
             >
-              <span>Explore all {transactions.length} transactions</span>
+              <span>{t('dashboard.explore', { n: transactions.length })}</span>
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </button>
           </div>
