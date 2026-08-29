@@ -208,7 +208,7 @@ export const RecurringView: React.FC = () => {
         </div>
         <button
           onClick={openNewModal}
-          className="bg-primary text-on-primary hover:bg-primary-active px-4 py-2 rounded-lg text-xs md:text-sm font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-sm"
+          className="bg-primary text-on-primary hover:bg-primary-active px-4 py-2 rounded-lg text-xs md:text-sm font-semibold flex items-center justify-center space-x-1.5 min-w-[140px] whitespace-nowrap transition-colors cursor-pointer shadow-sm"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
           <span>New Template</span>

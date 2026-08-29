@@ -8,8 +8,8 @@ export const Sidebar: React.FC = () => {
   const navItems: { id: ViewType; label: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
     { id: 'transactions', label: 'Transactions', icon: 'receipt_long', badge: draftCount },
-    { id: 'categories', label: 'Categories', icon: 'category' },
     { id: 'recurring', label: 'Recurring', icon: 'event_repeat', badge: unpaidRecurring.length },
+    { id: 'categories', label: 'Categories', icon: 'category' },
     { id: 'settings', label: 'Settings', icon: 'settings' },
   ];
 
