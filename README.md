@@ -24,6 +24,39 @@ Aplikasi budget / personal finance **monolith** — satu server Go yang melayani
 
 ---
 
+## Quick Start (Docker — pull dari GHCR)
+
+Cara tercepat: image siap pakai tersedia di **GHCR** (public, tanpa login). Satu container melayani UI + API.
+
+```bash
+docker run -d --name budgetin \
+  -e APP_PASSWORD="ganti-dengan-password-kuat" \
+  -p 8080:8080 \
+  -v budget-data:/app/data \
+  ghcr.io/rahmatfadhilah22/budgetin:latest
+```
+
+Buka **http://localhost:8080** dan masuk dengan password tadi.
+
+Atau lewat Compose (`docker-compose.yml`):
+
+```yaml
+services:
+  budgetin:
+    image: ghcr.io/rahmatfadhilah22/budgetin:latest
+    ports:
+      - "8080:8080"
+    env_file: .env
+    volumes:
+      - budget-data:/app/data
+volumes:
+  budget-data:
+```
+
+> Image dibangun otomatis oleh GitHub Actions setiap push ke `main`. Ingin build dari sumber? Lihat [Build image sendiri](#build-image-sendiri).
+
+---
+
 ## Prasyarat
 
 | Jalur | Butuh |
@@ -86,9 +119,9 @@ Buka **http://localhost:3000** dan masuk dengan password tadi.
 
 ---
 
-## Menjalankan dengan Docker
+## Build image sendiri
 
-Backend di image sudah menyertakan hasil build React — satu container melayani UI + API.
+Bangun dari sumber (beda dengan Quick Start yang pull image jadi dari GHCR). Backend di image sudah menyertakan hasil build React — satu container melayani UI + API.
 
 ### 1. Buat file `.env` di root project
 
@@ -127,6 +160,32 @@ docker compose logs -f       # log
 ```
 
 Data tersimpan di named volume `budget-data` — tetap ada walau container dihapus. Untuk mulai benar-benar kosong: `docker compose down -v`.
+
+---
+
+## Menjalankan di server tanpa Docker (binary langsung)
+
+Server adalah binary Go tunggal yang melayani dist React + API — tidak perlu Docker sama sekali. Build di mesin dev, kirim dua artefak ke server:
+
+1. **Build frontend** (menghasilkan `dist/`):
+
+   ```bash
+   npm install && npm run build
+   ```
+
+2. **Build backend**:
+
+   ```bash
+   cd backend && go build -o budgetin .
+   ```
+
+3. **Kirim ke server**, taruh binary dan `dist/` bersebelahan (misal `/opt/budgetin/`), lalu jalankan:
+
+   ```bash
+   APP_PASSWORD="ganti-dengan-password-kuat" APP_ENV=production ./budgetin
+   ```
+
+Server membaca UI dari `./dist` relatif ke direktori tempat binary dijalankan — pastikan `dist/` satu folder dengan binary. Pasang reverse proxy HTTPS di depan (lihat [Deployment production](#deployment-production)). Data SQLite (`budget.db`) dibuat di direktori jalan — backup = salin file itu.
 
 ---
 
@@ -185,6 +244,16 @@ docker compose up --build -d
 ```
 
 Healthcheck bawaan memanggil `/api/health` (public, tanpa auth) setiap 30 detik.
+
+### Pull image dari GHCR di server / panel (EasyPanel, Coolify, dll)
+
+Daripada membangun Dockerfile di server, tarik image jadi dari GHCR — jauh lebih cepat. Image **public**, tanpa credential:
+
+```
+image: ghcr.io/rahmatfadhilah22/budgetin:latest
+```
+
+Set env `APP_PASSWORD` + `APP_ENV=production`, dan persist volume `/app/data` untuk SQLite. Port container `8080`.
 
 ---
 
