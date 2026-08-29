@@ -17,6 +17,7 @@ export const DesktopHeader: React.FC = () => {
     logout,
     draftCount,
     unpaidRecurring,
+    t,
   } = useBudget();
 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -38,17 +39,17 @@ export const DesktopHeader: React.FC = () => {
   const getPageTitle = (view: ViewType) => {
     switch (view) {
       case 'dashboard':
-        return 'Dashboard';
+        return t('nav.dashboard');
       case 'transactions':
-        return 'Transactions';
+        return t('nav.transactions');
       case 'categories':
-        return 'Categories';
+        return t('nav.categories');
       case 'recurring':
-        return 'Recurring';
+        return t('nav.recurring');
       case 'settings':
-        return 'Settings';
+        return t('nav.settings');
       default:
-        return 'Budget';
+        return t('app.name');
     }
   };
 
@@ -82,7 +83,7 @@ export const DesktopHeader: React.FC = () => {
                   : 'text-muted hover:text-ink'
               }`}
             >
-              Monthly
+              {t('period.monthly')}
             </button>
             <button
               id="period-toggle-weekly"
@@ -93,7 +94,7 @@ export const DesktopHeader: React.FC = () => {
                   : 'text-muted hover:text-ink'
               }`}
             >
-              Weekly
+              {t('period.weekly')}
             </button>
           </div>
         )}
@@ -113,7 +114,7 @@ export const DesktopHeader: React.FC = () => {
         <button
           id="privacy-toggle-btn"
           onClick={() => (privacyMode ? setPrivacyPromptOpen(true) : setPrivacyMode(true))}
-          title={privacyMode ? 'Show Balances' : 'Hide Balances (Privacy Mode)'}
+          title={privacyMode ? t('privacy.title') : t('privacy.hide')}
           className="text-muted hover:text-ink p-1.5 rounded-full hover:bg-surface-soft transition-colors cursor-pointer"
         >
           <span
@@ -130,7 +131,7 @@ export const DesktopHeader: React.FC = () => {
           <button
             onClick={() => navigateView('transactions')}
             className="text-muted hover:text-ink p-1.5 rounded-full hover:bg-surface-soft transition-colors relative cursor-pointer"
-            title="Pending items"
+            title={t('header.pendingItems')}
           >
             <span className="material-symbols-outlined text-[22px]">notifications</span>
             {alertCount > 0 && (
@@ -161,8 +162,8 @@ export const DesktopHeader: React.FC = () => {
           {profileMenuOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-surface-soft border border-hairline rounded-xl shadow-lg p-2 z-50">
               <div className="p-2 border-b border-hairline-soft">
-                <p className="font-semibold text-sm text-ink">{settings.name || 'User'}</p>
-                <p className="text-xs text-muted-soft truncate">{settings.email || 'Local account'}</p>
+                <p className="font-semibold text-sm text-ink">{settings.name || t('common.user')}</p>
+                <p className="text-xs text-muted-soft truncate">{settings.email || t('common.localAccount')}</p>
               </div>
               <div className="py-1 space-y-1 text-xs">
                 <button
@@ -173,7 +174,7 @@ export const DesktopHeader: React.FC = () => {
                   className="w-full text-left px-2 py-1.5 rounded hover:bg-surface-card text-ink font-medium flex items-center space-x-2 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">person</span>
-                  <span>Profile Settings</span>
+                  <span>{t('header.profileSettings')}</span>
                 </button>
                 <button
                   onClick={handleLogout}
@@ -181,7 +182,7 @@ export const DesktopHeader: React.FC = () => {
                   className="w-full text-left px-2 py-1.5 rounded hover:bg-surface-card text-error font-medium flex items-center space-x-2 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">logout</span>
-                  <span>{loggingOut ? 'Signing out…' : 'Sign out'}</span>
+                  <span>{loggingOut ? t('auth.signingOut') : t('auth.signOut')}</span>
                 </button>
               </div>
             </div>

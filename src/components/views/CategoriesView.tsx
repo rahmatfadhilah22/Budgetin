@@ -22,6 +22,7 @@ export const CategoriesView: React.FC = () => {
     updateCategory,
     deleteCategory,
     formatCurrency,
+    t,
   } = useBudget();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -68,12 +69,12 @@ export const CategoriesView: React.FC = () => {
     e.preventDefault();
     if (submitting) return;
     if (!name.trim()) {
-      setError('Please enter a category name.');
+      setError(t('categories.nameError'));
       return;
     }
     const budgetVal = parseInt(budgetStr.replace(/\D/g, ''), 10) || 0;
     if (budgetVal < 0) {
-      setError('Budget cannot be negative.');
+      setError(t('categories.budgetNegative'));
       return;
     }
     setSubmitting(true);
@@ -86,7 +87,7 @@ export const CategoriesView: React.FC = () => {
       }
       setModalOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save category');
+      setError(err instanceof Error ? err.message : t('categories.saveError'));
     } finally {
       setSubmitting(false);
     }
@@ -100,7 +101,7 @@ export const CategoriesView: React.FC = () => {
       await deleteCategory(editingCategory.id);
       setModalOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete category');
+      setError(err instanceof Error ? err.message : t('categories.deleteError'));
     } finally {
       setDeleting(false);
       setConfirmOpen(false);
@@ -112,21 +113,21 @@ export const CategoriesView: React.FC = () => {
       {/* Top Header */}
       <div className="flex justify-between items-end pb-2 border-b border-hairline">
         <div>
-          <h1 className="font-display text-2xl md:text-3xl font-medium tracking-tight text-ink">Categories</h1>
-          <p className="text-sm text-muted mt-1">Manage your budget categories and spending limits.</p>
+          <h1 className="font-display text-2xl md:text-3xl font-medium tracking-tight text-ink">{t('nav.categories')}</h1>
+          <p className="text-sm text-muted mt-1">{t('categories.subtitle')}</p>
         </div>
         <button
           onClick={openNewCategoryModal}
           className="bg-primary text-on-primary hover:bg-primary-active px-4 py-2 rounded-lg text-xs md:text-sm font-semibold flex items-center justify-center space-x-1.5 min-w-[140px] whitespace-nowrap transition-colors cursor-pointer shadow-sm"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          <span>New Category</span>
+          <span>{t('categories.new')}</span>
         </button>
       </div>
 
       {/* Categories Bento Grid */}
       {categories.length === 0 ? (
-        <p className="text-sm text-muted">No categories yet — create your first one.</p>
+        <p className="text-sm text-muted">{t('categories.empty')}</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((cat) => (
@@ -139,19 +140,19 @@ export const CategoriesView: React.FC = () => {
                 <div className="w-12 h-12 rounded-2xl bg-surface-soft text-body flex items-center justify-center group-hover:bg-ink group-hover:text-canvas transition-colors">
                   <span className="material-symbols-outlined text-[24px]">{cat.icon}</span>
                 </div>
-                <span className="text-xs px-2 py-0.5 border border-hairline rounded-md text-muted capitalize font-medium">{cat.type}</span>
+                <span className="text-xs px-2 py-0.5 border border-hairline rounded-md text-muted capitalize font-medium">{cat.type === 'income' ? t('type.income') : t('type.expense')}</span>
               </div>
               <h3 className="font-display text-xl font-medium text-ink tracking-tight mb-4">{cat.name}</h3>
               <div className="flex justify-between items-end pt-3 border-t border-hairline-soft mt-auto">
                 <div className="flex flex-col">
                   {cat.type === 'expense' && (
                     <>
-                      <span className="text-xs text-muted-soft mb-0.5">Budget</span>
+                      <span className="text-xs text-muted-soft mb-0.5">{t('categories.budget')}</span>
                       <span className="font-display text-2xl font-semibold text-ink tracking-tight">{formatCurrency(cat.budget)}</span>
                     </>
                   )}
                 </div>
-                <button type="button" title="Edit category" className="text-muted-soft group-hover:text-ink p-1.5 hover:bg-hairline rounded-full transition-colors">
+                <button type="button" title={t('categories.edit')} className="text-muted-soft group-hover:text-ink p-1.5 hover:bg-hairline rounded-full transition-colors">
                   <span className="material-symbols-outlined text-[20px]">edit</span>
                 </button>
               </div>
@@ -166,8 +167,8 @@ export const CategoriesView: React.FC = () => {
             <div className="w-12 h-12 rounded-full bg-surface-soft group-hover:bg-ink group-hover:text-canvas flex items-center justify-center mb-2 transition-colors">
               <span className="material-symbols-outlined text-[26px]">add</span>
             </div>
-            <span className="text-sm font-bold">Add Category</span>
-            <span className="text-xs text-muted-soft mt-0.5">Configure spending limit</span>
+            <span className="text-sm font-bold">{t('categories.add')}</span>
+            <span className="text-xs text-muted-soft mt-0.5">{t('categories.addSub')}</span>
           </div>
         </div>
       )}
@@ -184,7 +185,7 @@ export const CategoriesView: React.FC = () => {
           >
             <div className="flex justify-between items-center pb-2 border-b border-hairline">
               <h3 className="font-display text-xl font-medium text-ink tracking-tight">
-                {editingCategory ? 'Edit Category' : 'New Category'}
+                {editingCategory ? t('categories.editTitle') : t('categories.new')}
               </h3>
               <button onClick={() => setModalOpen(false)} className="text-muted hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
                 <span className="material-symbols-outlined text-[22px]">close</span>
@@ -193,40 +194,40 @@ export const CategoriesView: React.FC = () => {
 
             <form onSubmit={handleSave} className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">Category Name</label>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">{t('categories.name')}</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Groceries, Entertainment"
+                  placeholder={t('categories.namePh')}
                   className="w-full bg-transparent border-0 border-b border-muted-soft focus:border-ink focus:ring-0 px-0 py-2 text-xl font-semibold text-ink transition-colors outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">Type</label>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">{t('categories.type')}</label>
                 <div className="flex p-1 bg-surface-card rounded-xl border border-hairline">
                   <button
                     type="button"
                     onClick={() => { setType('income'); setSelectedIcon(INCOME_ICONS[0]); }}
                     className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${type === 'income' ? 'bg-ink text-on-dark shadow-sm' : 'text-muted hover:text-ink'}`}
                   >
-                    Income
+                    {t('type.income')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setType('expense'); setSelectedIcon(EXPENSE_ICONS[0]); }}
                     className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${type === 'expense' ? 'bg-ink text-on-dark shadow-sm' : 'text-muted hover:text-ink'}`}
                   >
-                    Expense
+                    {t('type.expense')}
                   </button>
                 </div>
               </div>
 
               {type === 'expense' && (
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">Monthly Budget (Rp)</label>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">{t('categories.monthlyBudget')}</label>
                   <div className="flex items-center border-b border-muted-soft focus-within:border-ink transition-colors pb-1">
                     <span className="text-xl font-medium text-muted mr-2">Rp</span>
                     <input
@@ -243,7 +244,7 @@ export const CategoriesView: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-3">Icon</label>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-3">{t('categories.icon')}</label>
                 <div className="grid grid-cols-5 gap-2.5">
                   {(type === 'income' ? INCOME_ICONS : EXPENSE_ICONS).map((iconName) => {
                     const isSelected = selectedIcon === iconName;
@@ -273,7 +274,7 @@ export const CategoriesView: React.FC = () => {
                     className="w-full flex items-center justify-center space-x-1.5 py-2.5 rounded-xl border border-error/40 text-error text-sm font-semibold hover:bg-error/10 hover:border-error transition-colors cursor-pointer disabled:opacity-60"
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
-                    <span>{deleting ? 'Deleting…' : 'Delete this category'}</span>
+                    <span>{deleting ? t('common.deleting') : t('categories.delete')}</span>
                   </button>
                 </div>
               )}
@@ -290,7 +291,7 @@ export const CategoriesView: React.FC = () => {
                     submitting ? 'bg-primary-disabled text-muted cursor-not-allowed' : 'bg-primary text-on-primary hover:bg-primary-active active:scale-98'
                   }`}
                 >
-                  {submitting ? 'Saving…' : editingCategory ? 'Save Changes' : 'Create Category'}
+                  {submitting ? t('common.saving') : editingCategory ? t('common.saveChanges') : t('categories.create')}
                 </button>
               </div>
             </form>
@@ -300,8 +301,8 @@ export const CategoriesView: React.FC = () => {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete category?"
-        message={`Delete "${editingCategory?.name ?? ''}"? Transactions using it must be recategorized first.`}
+        title={t('categories.deleteConfirmTitle')}
+        message={t('categories.deleteConfirmMsg', { name: editingCategory?.name ?? '' })}
         busy={deleting}
         onConfirm={performDelete}
         onCancel={() => setConfirmOpen(false)}

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDate } from '../date';
+import { useBudget } from '../context/BudgetContext';
 
 export interface SelectOption {
   value: string;
@@ -30,6 +31,7 @@ export const Select: React.FC<SelectProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const current = options.find((o) => o.value === value);
+  const { t } = useBudget();
 
   const toggle = () => {
     if (open) {
@@ -82,7 +84,7 @@ export const Select: React.FC<SelectProps> = ({
           open ? 'border-muted-soft' : ''
         }`}
       >
-        <span className="whitespace-nowrap">{current?.label ?? 'Select…'}</span>
+        <span className="whitespace-nowrap">{current?.label ?? t('common.select')}</span>
         <span
           className={`ml-1 shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
           aria-hidden="true"
@@ -149,6 +151,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, classNa
   });
   const btnRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const { t } = useBudget();
 
   const toggle = () => {
     if (open) {
@@ -204,7 +207,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, classNa
         className={`inline-flex items-center gap-1.5 border border-hairline bg-canvas rounded-lg p-2 text-sm text-ink font-medium hover:border-muted-soft focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:opacity-50 ${className}`}
       >
         <span className="material-symbols-outlined text-[18px] text-muted">calendar_today</span>
-        <span>{Number.isNaN(new Date(`${value}T00:00:00`).getTime()) ? 'Select date' : formatDate(value)}</span>
+        <span>{Number.isNaN(new Date(`${value}T00:00:00`).getTime()) ? t('common.selectDate') : formatDate(value)}</span>
       </button>
 
       {open && coords &&
@@ -216,11 +219,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, classNa
           >
             <div className="p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <button type="button" onClick={() => setView(new Date(y, m - 1, 1))} className="p-1 text-muted hover:text-ink rounded hover:bg-surface-card cursor-pointer" aria-label="Previous month">
+                <button type="button" onClick={() => setView(new Date(y, m - 1, 1))} className="p-1 text-muted hover:text-ink rounded hover:bg-surface-card cursor-pointer" aria-label={t('common.prevMonth')}>
                   <span className="material-symbols-outlined text-[16px]">chevron_left</span>
                 </button>
                 <span className="text-sm font-semibold text-ink">{monthName}</span>
-                <button type="button" onClick={() => setView(new Date(y, m + 1, 1))} className="p-1 text-muted hover:text-ink rounded hover:bg-surface-card cursor-pointer" aria-label="Next month">
+                <button type="button" onClick={() => setView(new Date(y, m + 1, 1))} className="p-1 text-muted hover:text-ink rounded hover:bg-surface-card cursor-pointer" aria-label={t('common.nextMonth')}>
                   <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                 </button>
               </div>
@@ -253,7 +256,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, classNa
                   onClick={() => { onChange(todayISO); setOpen(false); }}
                   className="text-xs font-semibold text-primary hover:underline cursor-pointer"
                 >
-                  Today
+                  {t('common.today')}
                 </button>
               </div>
             </div>
@@ -315,13 +318,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
   title,
   message,
-  confirmLabel = 'Delete',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   destructive = true,
   busy = false,
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useBudget();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -359,7 +363,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             disabled={busy}
             className="px-4 py-2 rounded-lg text-sm font-semibold text-body bg-surface-card border border-hairline hover:bg-surface-soft transition-colors cursor-pointer disabled:opacity-60"
           >
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
           <button
             type="button"
@@ -369,7 +373,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               destructive ? 'bg-error text-white hover:bg-error/90' : 'bg-primary text-on-primary hover:bg-primary-active'
             }`}
           >
-            {busy ? 'Deleting…' : confirmLabel}
+            {busy ? t('common.deleting') : confirmLabel ?? t('common.delete')}
           </button>
         </div>
       </div>

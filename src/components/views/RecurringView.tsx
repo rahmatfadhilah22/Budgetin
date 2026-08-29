@@ -17,6 +17,7 @@ export const RecurringView: React.FC = () => {
     transactions,
     unpaidRecurring,
     formatCurrency,
+    t,
   } = useBudget();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -87,12 +88,12 @@ export const RecurringView: React.FC = () => {
     e.preventDefault();
     if (submitting) return;
     if (!name.trim()) {
-      setError('Please enter a template name.');
+      setError(t('recurring.nameError'));
       return;
     }
     const amountVal = parseInt(amountStr.replace(/\D/g, ''), 10) || 0;
     if (amountVal <= 0) {
-      setError('Amount must be greater than 0.');
+      setError(t('recurring.amountError'));
       return;
     }
     setSubmitting(true);
@@ -105,7 +106,7 @@ export const RecurringView: React.FC = () => {
       }
       setModalOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save template');
+      setError(err instanceof Error ? err.message : t('recurring.saveError'));
     } finally {
       setSubmitting(false);
     }
@@ -118,7 +119,7 @@ export const RecurringView: React.FC = () => {
     try {
       await logRecurringPayment(id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not log payment');
+      setError(err instanceof Error ? err.message : t('recurring.logError'));
     } finally {
       setLoggingId(null);
     }
@@ -133,7 +134,7 @@ export const RecurringView: React.FC = () => {
       await deleteRecurring(confirmId);
       setConfirmOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete template');
+      setError(err instanceof Error ? err.message : t('recurring.deleteError'));
     } finally {
       setDeletingId(null);
     }
@@ -141,7 +142,7 @@ export const RecurringView: React.FC = () => {
 
   const getCategoryName = (catId: string) => {
     const cat = categories.find((c) => c.id === catId);
-    return cat ? cat.name : 'Uncategorized';
+    return cat ? cat.name : t('common.uncategorized');
   };
 
   const openHistory = (rec: RecurringTemplate) => {
@@ -163,7 +164,7 @@ export const RecurringView: React.FC = () => {
     try {
       await updateTransaction(tx.id, { categoryId: catId || undefined });
     } catch (err) {
-      setPanelError(err instanceof Error ? err.message : 'Could not update category');
+      setPanelError(err instanceof Error ? err.message : t('recurring.updateCatError'));
     } finally {
       setTxBusyId(null);
     }
@@ -177,7 +178,7 @@ export const RecurringView: React.FC = () => {
       await deleteTransaction(txConfirmId);
       setTxConfirmOpen(false);
     } catch (err) {
-      setPanelError(err instanceof Error ? err.message : 'Could not delete transaction');
+      setPanelError(err instanceof Error ? err.message : t('recurring.deleteTxError'));
     } finally {
       setTxDeleteId(null);
     }
@@ -190,7 +191,7 @@ export const RecurringView: React.FC = () => {
     try {
       await syncRecurring(historyFor.id);
     } catch (err) {
-      setPanelError(err instanceof Error ? err.message : 'Could not sync history');
+      setPanelError(err instanceof Error ? err.message : t('recurring.syncError'));
     } finally {
       setSyncing(false);
     }
@@ -203,15 +204,15 @@ export const RecurringView: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-end pb-2 border-b border-hairline">
         <div>
-          <h1 className="font-display text-2xl md:text-3xl font-medium tracking-tight text-ink">Recurring</h1>
-          <p className="text-sm text-muted mt-1">Manage your scheduled transactions.</p>
+          <h1 className="font-display text-2xl md:text-3xl font-medium tracking-tight text-ink">{t('nav.recurring')}</h1>
+          <p className="text-sm text-muted mt-1">{t('recurring.subtitle')}</p>
         </div>
         <button
           onClick={openNewModal}
           className="bg-primary text-on-primary hover:bg-primary-active px-4 py-2 rounded-lg text-xs md:text-sm font-semibold flex items-center justify-center space-x-1.5 min-w-[140px] whitespace-nowrap transition-colors cursor-pointer shadow-sm"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          <span>New Template</span>
+          <span>{t('recurring.new')}</span>
         </button>
       </div>
 
@@ -221,7 +222,7 @@ export const RecurringView: React.FC = () => {
           <div className="flex items-center space-x-3">
             <span className="material-symbols-outlined text-[#b5790f] text-[24px]">warning</span>
             <span className="text-sm md:text-base font-semibold text-body-strong">
-              {unpaidRecurring[0].name} {formatCurrency(unpaidRecurring[0].defaultAmount)} — paid yet?
+              {t('recurring.paidYet', { name: unpaidRecurring[0].name, amount: formatCurrency(unpaidRecurring[0].defaultAmount) })}
             </span>
           </div>
           <button
@@ -229,7 +230,7 @@ export const RecurringView: React.FC = () => {
             disabled={loggingId === unpaidRecurring[0].id}
             className="bg-ink text-canvas hover:bg-body-strong disabled:opacity-60 px-4 py-2 rounded-lg transition-colors font-semibold text-xs md:text-sm cursor-pointer self-end sm:self-auto"
           >
-            {loggingId === unpaidRecurring[0].id ? 'Logging…' : 'Log it now'}
+            {loggingId === unpaidRecurring[0].id ? t('recurring.logging') : t('recurring.logNow')}
           </button>
         </div>
       )}
@@ -238,14 +239,14 @@ export const RecurringView: React.FC = () => {
 
       {/* Template List */}
       {recurring.length === 0 ? (
-        <p className="text-sm text-muted">No recurring templates yet — add one above.</p>
+        <p className="text-sm text-muted">{t('recurring.empty')}</p>
       ) : (
         <div className="bg-surface-card rounded-2xl border border-hairline overflow-hidden">
           <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-hairline bg-surface-soft text-xs font-semibold text-muted uppercase tracking-wider">
-            <div className="col-span-4 pl-14">Name</div>
-            <div className="col-span-2">Category</div>
-            <div className="col-span-2 text-right">Default Amount</div>
-            <div className="col-span-4 pl-8">Due Day</div>
+            <div className="col-span-4 pl-14">{t('recurring.colName')}</div>
+            <div className="col-span-2">{t('recurring.colCategory')}</div>
+            <div className="col-span-2 text-right">{t('recurring.colAmount')}</div>
+            <div className="col-span-4 pl-8">{t('recurring.colDue')}</div>
           </div>
 
           <div className="divide-y divide-hairline-soft">
@@ -273,9 +274,9 @@ export const RecurringView: React.FC = () => {
 
                   <div className="col-span-4 w-full pl-8 text-left text-xs text-muted flex items-center justify-between space-x-2">
                     <div className="flex items-center space-x-2">
-                      <span className="font-medium">Due on the {rec.dueDay}{ordinal(rec.dueDay)}</span>
+                      <span className="font-medium">{t('recurring.dueOn', { day: rec.dueDay, ord: ordinal(rec.dueDay) })}</span>
                       {isPaid && (
-                        <span className="text-[10px] bg-success/15 text-success font-bold px-1.5 py-0.2 rounded">Paid</span>
+                        <span className="text-[10px] bg-success/15 text-success font-bold px-1.5 py-0.2 rounded">{t('recurring.paid')}</span>
                       )}
                     </div>
                     <div className="flex items-center space-x-1">
@@ -285,20 +286,20 @@ export const RecurringView: React.FC = () => {
                           disabled={loggingId === rec.id}
                           className="text-xs bg-primary text-on-primary hover:bg-primary-active disabled:opacity-60 px-2 py-1 rounded font-medium cursor-pointer"
                         >
-                          {loggingId === rec.id ? '…' : 'Log'}
+                          {loggingId === rec.id ? '…' : t('recurring.log')}
                         </button>
                       )}
                       <button
                         onClick={() => openHistory(rec)}
-                        title="View payment history"
+                        title={t('recurring.viewHistory')}
                         className="text-xs border border-hairline bg-surface-soft hover:bg-hairline px-2 py-1 rounded font-medium cursor-pointer"
                       >
-                        History{transactions.filter((t) => t.templateId === rec.id).length > 0 ? ` (${transactions.filter((t) => t.templateId === rec.id).length})` : ''}
+                        {t('recurring.history')}{transactions.filter((t) => t.templateId === rec.id).length > 0 ? ` (${transactions.filter((t) => t.templateId === rec.id).length})` : ''}
                       </button>
                       <button
                         onClick={() => openEditModal(rec)}
                         className="text-muted-soft hover:text-ink p-1 hover:bg-hairline rounded transition-colors cursor-pointer"
-                        title="Edit template"
+                        title={t('recurring.editTitle')}
                       >
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                       </button>
@@ -306,7 +307,7 @@ export const RecurringView: React.FC = () => {
                         onClick={() => { setConfirmId(rec.id); setConfirmOpen(true); }}
                         disabled={deletingId === rec.id}
                         className="text-muted-soft hover:text-error p-1 hover:bg-hairline rounded transition-colors cursor-pointer disabled:opacity-60"
-                        title="Delete template"
+                        title={t('recurring.deleteTitle')}
                       >
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
@@ -331,7 +332,7 @@ export const RecurringView: React.FC = () => {
           >
             <div className="flex justify-between items-center pb-2 border-b border-hairline">
               <h3 className="font-display text-xl font-medium text-ink tracking-tight">
-                {editingTemplate ? 'Edit Recurring Template' : 'New Recurring Template'}
+                {editingTemplate ? t('recurring.edit') : t('recurring.newFull')}
               </h3>
               <button onClick={() => setModalOpen(false)} className="text-muted hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
                 <span className="material-symbols-outlined text-[22px]">close</span>
@@ -340,26 +341,26 @@ export const RecurringView: React.FC = () => {
 
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Template Name</label>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('recurring.name')}</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Rent, Internet, Gym"
+                  placeholder={t('recurring.namePh')}
                   className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-semibold text-ink focus:border-ink outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Category</label>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('recurring.colCategory')}</label>
                 <Select
                   className="w-full"
                   value={categoryId}
                   onChange={setCategoryId}
                   options={
                     expenseCategories.length === 0
-                      ? [{ value: '', label: 'No expense categories yet' }]
+                      ? [{ value: '', label: t('recurring.noExpenseCategories') }]
                       : expenseCategories.map((c) => ({ value: c.id, label: c.name }))
                   }
                 />
@@ -367,7 +368,7 @@ export const RecurringView: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Amount</label>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('recurring.amount')}</label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -380,7 +381,7 @@ export const RecurringView: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Due Day</label>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('recurring.dueDay')}</label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -393,23 +394,23 @@ export const RecurringView: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Frequency</label>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('recurring.frequency')}</label>
                   <Select
                     variant="lg"
                     className="w-full"
                     value={frequency}
                     onChange={(v) => setFrequency(v as 'monthly' | 'weekly' | 'yearly')}
                     options={[
-                      { value: 'monthly', label: 'Monthly' },
-                      { value: 'weekly', label: 'Weekly' },
-                      { value: 'yearly', label: 'Yearly' },
+                      { value: 'monthly', label: t('period.monthly') },
+                      { value: 'weekly', label: t('period.weekly') },
+                      { value: 'yearly', label: t('period.yearly') },
                     ]}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Icon</label>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('recurring.icon')}</label>
                 <div className="grid grid-cols-6 gap-2 pt-1">
                   {['home', 'subscriptions', 'fitness_center', 'wifi', 'bolt', 'movie'].map((ic) => (
                     <button
@@ -437,7 +438,7 @@ export const RecurringView: React.FC = () => {
                     submitting ? 'bg-primary-disabled text-muted cursor-not-allowed' : 'bg-primary text-on-primary hover:bg-primary-active active:scale-98'
                   }`}
                 >
-                  {submitting ? 'Saving…' : editingTemplate ? 'Save Template' : 'Create Template'}
+                  {submitting ? t('common.saving') : editingTemplate ? t('recurring.save') : t('recurring.create')}
                 </button>
               </div>
             </form>
@@ -457,7 +458,7 @@ export const RecurringView: React.FC = () => {
           >
             <div className="flex justify-between items-center pb-2 border-b border-hairline">
               <h3 className="font-display text-xl font-medium text-ink tracking-tight">
-                History — {historyFor.name}
+                {t('recurring.historyTitle', { name: historyFor.name })}
               </h3>
               <button onClick={() => setHistoryFor(null)} className="text-muted hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
                 <span className="material-symbols-outlined text-[22px]">close</span>
@@ -467,7 +468,7 @@ export const RecurringView: React.FC = () => {
             {panelError && <p role="alert" aria-live="polite" className="text-xs font-semibold text-error">{panelError}</p>}
 
             {historyTransactions.length === 0 ? (
-              <p className="text-sm text-muted">No payments recorded for this template yet.</p>
+              <p className="text-sm text-muted">{t('recurring.historyEmpty')}</p>
             ) : (
               <div className="divide-y divide-hairline-soft">
                 {historyTransactions.map((tx) => (
@@ -492,7 +493,7 @@ export const RecurringView: React.FC = () => {
                         onClick={() => { setTxConfirmId(tx.id); setTxConfirmOpen(true); }}
                         disabled={txBusyId === tx.id || txDeleteId === tx.id}
                         className="text-muted-soft hover:text-error p-1 hover:bg-hairline rounded transition-colors cursor-pointer disabled:opacity-60"
-                        title="Delete this transaction"
+                        title={t('recurring.deleteTxTitle')}
                       >
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                       </button>
@@ -508,7 +509,7 @@ export const RecurringView: React.FC = () => {
                 disabled={syncing}
                 className="w-full py-2.5 rounded-xl border border-primary/40 text-primary text-sm font-semibold hover:bg-primary/5 transition-colors cursor-pointer disabled:opacity-60"
               >
-                {syncing ? 'Updating…' : `Align ${historyTransactions.length} transaction${historyTransactions.length === 1 ? '' : 's'} with template (name + category, amounts untouched)`}
+                {syncing ? t('recurring.updating') : t('recurring.align', { n: historyTransactions.length })}
               </button>
             )}
           </div>
@@ -517,8 +518,8 @@ export const RecurringView: React.FC = () => {
 
       <ConfirmDialog
         open={txConfirmOpen}
-        title="Delete transaction?"
-        message="Delete this payment from the history?"
+        title={t('transactions.deleteConfirmTitle')}
+        message={t('recurring.deleteTxMsg')}
         busy={!!txDeleteId}
         onConfirm={handleTxDelete}
         onCancel={() => setTxConfirmOpen(false)}
@@ -526,8 +527,8 @@ export const RecurringView: React.FC = () => {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete template?"
-        message="Delete this recurring template? Past transactions are kept."
+        title={t('recurring.deleteConfirmTitle')}
+        message={t('recurring.deleteConfirmMsg')}
         busy={!!deletingId}
         onConfirm={handleDelete}
         onCancel={() => setConfirmOpen(false)}

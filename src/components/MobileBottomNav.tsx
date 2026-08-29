@@ -3,14 +3,14 @@ import { useBudget } from '../context/BudgetContext';
 import { ViewType } from '../types';
 
 export const MobileBottomNav: React.FC = () => {
-  const { currentView, navigateView, setQuickAddOpen, draftCount } = useBudget();
+  const { currentView, navigateView, setQuickAddOpen, draftCount, t } = useBudget();
 
   const items: { id: ViewType; label: string; icon: string; badge?: number }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { id: 'transactions', label: 'Transactions', icon: 'receipt_long', badge: draftCount },
-    { id: 'recurring', label: 'Recurring', icon: 'repeat' },
-    { id: 'categories', label: 'Categories', icon: 'category' },
-    { id: 'settings', label: 'Settings', icon: 'settings' },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: 'dashboard' },
+    { id: 'transactions', label: t('nav.transactions'), icon: 'receipt_long', badge: draftCount },
+    { id: 'recurring', label: t('nav.recurring'), icon: 'repeat' },
+    { id: 'categories', label: t('nav.categories'), icon: 'category' },
+    { id: 'settings', label: t('nav.settings'), icon: 'settings' },
   ];
 
   return (
@@ -19,7 +19,7 @@ export const MobileBottomNav: React.FC = () => {
       <button
         id="mobile-fab-quick-add"
         onClick={() => setQuickAddOpen(true)}
-        aria-label="Quick Add"
+        aria-label={t('common.quickAdd')}
         className="md:hidden fixed bottom-24 right-5 w-14 h-14 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg border-2 border-canvas z-40 active:scale-90 transition-transform cursor-pointer"
       >
         <span className="material-symbols-outlined text-[28px]">add</span>

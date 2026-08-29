@@ -3,7 +3,7 @@ import { useBudget } from '../context/BudgetContext';
 import { api, ApiError } from '../api';
 
 export const PrivacyUnlockModal: React.FC = () => {
-  const { privacyPromptOpen, setPrivacyPromptOpen, setPrivacyMode } = useBudget();
+  const { privacyPromptOpen, setPrivacyPromptOpen, setPrivacyMode, t } = useBudget();
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export const PrivacyUnlockModal: React.FC = () => {
       setPrivacyMode(false);
       close();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Wrong password');
+      setError(err instanceof ApiError ? err.message : t('privacy.wrongPassword'));
       setPassword('');
       setSubmitting(false);
     }
@@ -45,18 +45,18 @@ export const PrivacyUnlockModal: React.FC = () => {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center pb-2 border-b border-hairline">
-          <h3 className="font-display text-lg font-medium text-ink">Show Balances</h3>
+          <h3 className="font-display text-lg font-medium text-ink">{t('privacy.title')}</h3>
           <button onClick={close} className="text-muted-soft hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>
 
-        <p className="text-xs text-muted">Enter your password to reveal your balances.</p>
+        <p className="text-xs text-muted">{t('privacy.subtitle')}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="unlock-password" className="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-              Password
+              {t('auth.password')}
             </label>
             <input
               id="unlock-password"
@@ -85,7 +85,7 @@ export const PrivacyUnlockModal: React.FC = () => {
                 : 'bg-primary text-on-primary hover:bg-primary-active active:scale-98 shadow-sm'
             }`}
           >
-            {submitting ? 'Checking…' : 'Unlock'}
+            {submitting ? t('privacy.checking') : t('privacy.unlock')}
           </button>
         </form>
       </div>

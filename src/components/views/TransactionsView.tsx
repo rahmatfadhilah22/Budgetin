@@ -14,6 +14,7 @@ export const TransactionsView: React.FC = () => {
     updateTransaction,
     formatCurrency,
     setQuickAddOpen,
+    t,
   } = useBudget();
 
   const [activeTab, setActiveTab] = useState<'drafts' | 'all'>('drafts');
@@ -78,7 +79,7 @@ export const TransactionsView: React.FC = () => {
     try {
       await completeDraft(draft.id, current.categoryId, current.note);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not finalize draft');
+      setActionError(err instanceof Error ? err.message : t('transactions.finalizeError'));
     } finally {
       setBusyId(null);
     }
@@ -92,7 +93,7 @@ export const TransactionsView: React.FC = () => {
       await deleteTransaction(confirmId);
       setConfirmOpen(false);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not delete transaction');
+      setActionError(err instanceof Error ? err.message : t('transactions.deleteError'));
     } finally {
       setDeleteId(null);
     }
@@ -120,14 +121,14 @@ export const TransactionsView: React.FC = () => {
     if (savingEdit || !editing) return;
     const amountVal = parseInt(editAmount.replace(/\D/g, ''), 10) || 0;
     if (amountVal <= 0) {
-      setActionError('Amount must be greater than 0.');
+      setActionError(t('transactions.amountError'));
       return;
     }
     setSavingEdit(true);
     setActionError(null);
     try {
       await updateTransaction(editing.id, {
-        merchant: editMerchant.trim() || 'Unknown Merchant',
+        merchant: editMerchant.trim() || t('common.unknownMerchant'),
         amount: amountVal,
         categoryId: editCategory || undefined,
         date: editDate,
@@ -135,7 +136,7 @@ export const TransactionsView: React.FC = () => {
       });
       setEditing(null);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Could not update transaction');
+      setActionError(err instanceof Error ? err.message : t('transactions.updateError'));
     } finally {
       setSavingEdit(false);
     }
@@ -159,7 +160,7 @@ export const TransactionsView: React.FC = () => {
 
   const getCategoryName = (categoryId?: string) => {
     const cat = categories.find((c) => c.id === categoryId);
-    return cat ? cat.name : 'Uncategorized';
+    return cat ? cat.name : t('common.uncategorized');
   };
 
   const expenseCategories = categories.filter((c) => c.type === 'expense');
@@ -170,12 +171,12 @@ export const TransactionsView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-hairline">
         <div>
           <h1 className="font-display text-2xl md:text-3xl font-medium tracking-tight text-ink">
-            {activeTab === 'drafts' ? 'Incomplete Transactions' : 'All Transactions'}
+            {activeTab === 'drafts' ? t('transactions.draftsTitle') : t('transactions.allTitle')}
           </h1>
           <p className="text-sm text-muted mt-1">
             {activeTab === 'drafts'
-              ? 'Review and categorize your recent drafts.'
-              : 'Complete history of all expenses and income.'}
+              ? t('transactions.draftsSub')
+              : t('transactions.allSub')}
           </p>
         </div>
 
@@ -186,7 +187,7 @@ export const TransactionsView: React.FC = () => {
               activeTab === 'drafts' ? 'bg-surface-dark text-on-dark shadow-sm' : 'text-muted hover:text-ink'
             }`}
           >
-            <span>Review Drafts</span>
+            <span>{t('transactions.reviewDrafts')}</span>
             {drafts.length > 0 && (
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${activeTab === 'drafts' ? 'bg-on-dark text-ink' : 'bg-warning/15 text-accent-amber'}`}>
                 {drafts.length}
@@ -199,7 +200,7 @@ export const TransactionsView: React.FC = () => {
               activeTab === 'all' ? 'bg-surface-dark text-on-dark shadow-sm' : 'text-muted hover:text-ink'
             }`}
           >
-            All ({transactions.length})
+            {t('transactions.allCount', { n: transactions.length })}
           </button>
         </div>
       </div>
@@ -216,12 +217,12 @@ export const TransactionsView: React.FC = () => {
               <div className="w-12 h-12 rounded-full bg-surface-soft text-body flex items-center justify-center mx-auto">
                 <span className="material-symbols-outlined text-[28px]">check_circle</span>
               </div>
-              <h3 className="font-display text-xl font-medium text-ink">All drafts reviewed!</h3>
+              <h3 className="font-display text-xl font-medium text-ink">{t('transactions.draftsDone')}</h3>
               <p className="text-xs text-muted max-w-sm mx-auto">
-                No pending or incomplete transactions require attention. Your budget is up to date.
+                {t('transactions.draftsDoneSub')}
               </p>
               <button onClick={() => setActiveTab('all')} className="mt-2 text-xs font-bold text-ink underline cursor-pointer">
-                View all transactions →
+                {t('transactions.viewAll')}
               </button>
             </div>
           ) : (
@@ -261,15 +262,15 @@ export const TransactionsView: React.FC = () => {
                           {hasError ? (
                             <>
                               <span className="material-symbols-outlined text-[14px] mr-1">error</span>
-                              Please select a category
+                              {t('transactions.selectCategoryError')}
                             </>
                           ) : (
-                            'Select Category'
+                            t('transactions.selectCategory')
                           )}
                         </span>
 
                         {chips.length === 0 ? (
-                          <p className="text-xs text-muted">Add expense categories in Categories first.</p>
+                          <p className="text-xs text-muted">{t('transactions.addCategoriesFirst')}</p>
                         ) : (
                           <div className="flex flex-wrap gap-1.5">
                             {chips.map((sc) => {
@@ -301,7 +302,7 @@ export const TransactionsView: React.FC = () => {
                         type="text"
                         value={state.note}
                         onChange={(e) => handleDraftNoteChange(draft.id, e.target.value)}
-                        placeholder="Add a note..."
+                        placeholder={t('transactions.addNote')}
                         className="w-full bg-transparent border-0 border-b border-hairline focus:ring-0 focus:border-ink p-0 pb-1 text-sm text-ink placeholder:text-muted-soft transition-colors outline-none"
                       />
 
@@ -314,11 +315,11 @@ export const TransactionsView: React.FC = () => {
                             hasError ? 'bg-error text-on-primary hover:bg-[#a63a3a]' : 'bg-primary text-on-primary hover:bg-primary-active'
                           }`}
                         >
-                          {isBusy ? 'Saving…' : 'Done'}
+                          {isBusy ? t('common.saving') : t('transactions.done')}
                         </button>
                         <button
                           type="button"
-                          title="Delete draft"
+                          title={t('transactions.deleteDraft')}
                           disabled={isDeleting}
                           onClick={() => { setConfirmId(draft.id); setConfirmOpen(true); }}
                           className="p-2 border border-hairline hover:bg-surface-soft text-muted-soft hover:text-error rounded-lg transition-colors cursor-pointer disabled:opacity-60"
@@ -343,7 +344,7 @@ export const TransactionsView: React.FC = () => {
               <span className="material-symbols-outlined text-muted-soft text-[18px] mr-2">search</span>
               <input
                 type="text"
-                placeholder="Search transactions..."
+                placeholder={t('transactions.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent border-none p-0 text-xs text-ink placeholder:text-muted-soft focus:ring-0 w-full outline-none"
@@ -356,7 +357,7 @@ export const TransactionsView: React.FC = () => {
                 value={selectedCategoryFilter}
                 onChange={setSelectedCategoryFilter}
                 options={[
-                  { value: 'all', label: 'All Categories' },
+                  { value: 'all', label: t('transactions.allCategories') },
                   ...categories.map((c) => ({ value: c.id, label: c.name })),
                 ]}
               />
@@ -366,9 +367,9 @@ export const TransactionsView: React.FC = () => {
                 value={selectedTypeFilter}
                 onChange={(v) => setSelectedTypeFilter(v as 'all' | 'expense' | 'income')}
                 options={[
-                  { value: 'all', label: 'All Types' },
-                  { value: 'expense', label: 'Expenses only' },
-                  { value: 'income', label: 'Income only' },
+                  { value: 'all', label: t('transactions.allTypes') },
+                  { value: 'expense', label: t('transactions.expensesOnly') },
+                  { value: 'income', label: t('transactions.incomeOnly') },
                 ]}
               />
 
@@ -377,7 +378,7 @@ export const TransactionsView: React.FC = () => {
                 className="bg-primary text-on-primary text-xs font-semibold px-3 py-2 rounded-lg hover:bg-primary-active transition-colors flex items-center space-x-1 whitespace-nowrap cursor-pointer ml-auto"
               >
                 <span className="material-symbols-outlined text-[16px]">add</span>
-                <span>Add</span>
+                <span>{t('transactions.add')}</span>
               </button>
             </div>
           </div>
@@ -385,7 +386,7 @@ export const TransactionsView: React.FC = () => {
           <div className="bg-surface-card border border-hairline rounded-xl overflow-hidden divide-y divide-hairline-soft">
             {filteredTransactions.length === 0 ? (
               <div className="p-12 text-center text-muted text-sm">
-                No transactions matched your search or filters.
+                {t('transactions.noMatch')}
               </div>
             ) : (
               filteredTransactions.map((tx) => (
@@ -401,10 +402,10 @@ export const TransactionsView: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <span className="font-semibold text-sm text-body-strong">{tx.merchant}</span>
                         {tx.isDraft && (
-                          <span className="text-[10px] bg-warning/15 text-accent-amber border border-warning/40 px-1.5 py-0.2 rounded font-bold">Draft</span>
+                          <span className="text-[10px] bg-warning/15 text-accent-amber border border-warning/40 px-1.5 py-0.2 rounded font-bold">{t('common.draftBadge')}</span>
                         )}
                         {tx.isRecurring && (
-                          <span className="text-[10px] bg-hairline text-muted px-1.5 py-0.2 rounded font-semibold">Recurring</span>
+                          <span className="text-[10px] bg-hairline text-muted px-1.5 py-0.2 rounded font-semibold">{t('common.recurringBadge')}</span>
                         )}
                       </div>
                       <div className="text-xs text-muted mt-0.5 flex items-center space-x-1.5">
@@ -429,7 +430,7 @@ export const TransactionsView: React.FC = () => {
                     <button
                       onClick={() => openEdit(tx)}
                       disabled={deleteId === tx.id}
-                      title="Edit"
+                      title={t('common.edit')}
                       className="opacity-0 group-hover:opacity-100 p-1 text-muted-soft hover:text-ink rounded transition-all cursor-pointer disabled:opacity-40"
                     >
                       <span className="material-symbols-outlined text-[18px]">edit</span>
@@ -437,7 +438,7 @@ export const TransactionsView: React.FC = () => {
                     <button
                       onClick={() => { setConfirmId(tx.id); setConfirmOpen(true); }}
                       disabled={deleteId === tx.id}
-                      title="Delete"
+                      title={t('common.delete')}
                       className="opacity-0 group-hover:opacity-100 p-1 text-muted-soft hover:text-error rounded transition-all cursor-pointer disabled:opacity-40"
                     >
                       <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -452,8 +453,8 @@ export const TransactionsView: React.FC = () => {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete transaction?"
-        message="Delete this transaction? This cannot be undone."
+        title={t('transactions.deleteConfirmTitle')}
+        message={t('transactions.deleteConfirmMsg')}
         busy={!!deleteId}
         onConfirm={handleDeleteTransaction}
         onCancel={() => setConfirmOpen(false)}
@@ -470,7 +471,7 @@ export const TransactionsView: React.FC = () => {
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center pb-2 border-b border-hairline">
-              <h3 className="font-display text-xl font-medium text-ink tracking-tight">Edit Transaction</h3>
+              <h3 className="font-display text-xl font-medium text-ink tracking-tight">{t('transactions.editTitle')}</h3>
               <button onClick={() => setEditing(null)} className="text-muted hover:text-ink p-1 rounded-full hover:bg-surface-card cursor-pointer">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
@@ -480,7 +481,7 @@ export const TransactionsView: React.FC = () => {
 
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Merchant</label>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('transactions.merchant')}</label>
                 <input
                   type="text"
                   value={editMerchant}
@@ -490,7 +491,7 @@ export const TransactionsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Amount</label>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('transactions.amount')}</label>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -503,30 +504,30 @@ export const TransactionsView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Category</label>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('transactions.category')}</label>
                   <Select
                     className="w-full"
                     value={editCategory}
                     onChange={setEditCategory}
                     options={[
-                      { value: '', label: 'Uncategorized' },
+                      { value: '', label: t('common.uncategorized') },
                       ...categories.map((c) => ({ value: c.id, label: c.name })),
                     ]}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Date</label>
+                  <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('transactions.date')}</label>
                   <DatePicker value={editDate} onChange={setEditDate} className="w-full" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">Note</label>
+                <label className="block text-xs font-semibold text-muted uppercase tracking-wider mb-1">{t('transactions.note')}</label>
                 <input
                   type="text"
                   value={editNote}
                   onChange={(e) => setEditNote(e.target.value)}
-                  placeholder="Optional"
+                  placeholder={t('transactions.optional')}
                   className="w-full bg-canvas border border-hairline rounded-lg p-2.5 text-sm font-semibold text-ink focus:border-ink outline-none"
                 />
               </div>
@@ -538,7 +539,7 @@ export const TransactionsView: React.FC = () => {
                   savingEdit ? 'bg-primary-disabled text-muted cursor-not-allowed' : 'bg-primary text-on-primary hover:bg-primary-active active:scale-98'
                 }`}
               >
-                {savingEdit ? 'Saving…' : 'Save Changes'}
+                {savingEdit ? t('common.saving') : t('common.saveChanges')}
               </button>
             </form>
           </div>
