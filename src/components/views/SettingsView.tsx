@@ -12,6 +12,7 @@ export const SettingsView: React.FC = () => {
     cycleDateRange,
     exportCSV,
     exportJSON,
+    setWelcomeOpen,
   } = useBudget();
 
   const [profileOpen, setProfileOpen] = useState(false);
@@ -198,6 +199,28 @@ export const SettingsView: React.FC = () => {
               <div>
                 <span className="text-sm font-semibold text-body-strong block">Change Password</span>
                 <span className="text-xs text-muted-soft">Update your app login password</span>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-muted-soft">chevron_right</span>
+          </div>
+        </div>
+      </section>
+
+      {/* HELP SECTION */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">Help</h3>
+        <div className="bg-surface-card border border-hairline rounded-xl overflow-hidden divide-y divide-hairline-soft">
+          <div
+            onClick={() => setWelcomeOpen(true)}
+            className="flex items-center justify-between p-4 hover:bg-canvas transition-colors cursor-pointer group"
+          >
+            <div className="flex items-center space-x-3.5">
+              <div className="w-9 h-9 rounded-full bg-surface-soft text-body flex items-center justify-center group-hover:bg-ink group-hover:text-canvas transition-colors">
+                <span className="material-symbols-outlined text-[20px]">help</span>
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-body-strong block">Welcome Guide</span>
+                <span className="text-xs text-muted-soft">Replay the intro to budget cycles, drafts & recurring</span>
               </div>
             </div>
             <span className="material-symbols-outlined text-muted-soft">chevron_right</span>

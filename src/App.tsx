@@ -7,6 +7,7 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { QuickAddModal } from './components/QuickAddModal';
 import { LoginView } from './components/LoginView';
 import { PrivacyUnlockModal } from './components/PrivacyUnlockModal';
+import { WelcomeModal } from './components/WelcomeModal';
 import { DashboardView } from './components/views/DashboardView';
 import { TransactionsView } from './components/views/TransactionsView';
 import { CategoriesView } from './components/views/CategoriesView';
@@ -60,6 +61,7 @@ const MainLayout: React.FC = () => {
       </div>
       <QuickAddModal />
       <PrivacyUnlockModal />
+      <WelcomeModal />
     </div>
   );
 };

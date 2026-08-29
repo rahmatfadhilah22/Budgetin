@@ -38,6 +38,8 @@ interface BudgetContextType {
   privacyPromptOpen: boolean;
   setPrivacyPromptOpen: React.Dispatch<React.SetStateAction<boolean>>;
   locked: boolean;
+  welcomeOpen: boolean;
+  setWelcomeOpen: React.Dispatch<React.SetStateAction<boolean>>;
 
   // Data
   categories: Category[];
@@ -133,6 +135,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [privacyMode, setPrivacyMode] = useState(true);
   const [privacyPromptOpen, setPrivacyPromptOpen] = useState(false);
   const [locked, setLocked] = useState(true);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     const snapshot = await api<BudgetSnapshot>('/api/data');
@@ -156,6 +159,13 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       cancelled = true;
     };
   }, [loadData]);
+
+  // First-time users get the welcome guide once; reopened anytime from Settings.
+  useEffect(() => {
+    if (authStatus === 'authenticated' && !localStorage.getItem('budget_welcome_seen')) {
+      setWelcomeOpen(true);
+    }
+  }, [authStatus]);
 
   const retry = useCallback(async () => {
     setBootError(null);
@@ -429,6 +439,8 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         privacyPromptOpen,
         setPrivacyPromptOpen,
         locked,
+        welcomeOpen,
+        setWelcomeOpen,
         categories: data.categories,
         transactions: data.transactions,
         recurring: data.recurring,
