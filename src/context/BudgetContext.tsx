@@ -167,6 +167,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         await loadData();
         if (cancelled) return;
         setAuthStatus('authenticated');
+        setLocked(false);
       } catch {
         if (!cancelled) setAuthStatus('anonymous');
       }
