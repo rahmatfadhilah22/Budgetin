@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useBudget } from '../context/BudgetContext';
 
 export const MobileTopNav: React.FC = () => {
-  const { navigateView, privacyMode, setPrivacyMode, setPrivacyPromptOpen, draftCount, settings } = useBudget();
+  const { navigateView, privacyMode, setPrivacyMode, setPrivacyPromptOpen, draftCount, settings, logout } = useBudget();
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await logout();
+  };
+
+  const initials = settings.name.trim().slice(0, 1).toUpperCase() || 'U';
 
   return (
     <header className="md:hidden bg-canvas w-full top-0 sticky border-b border-hairline z-40">
@@ -37,13 +46,49 @@ export const MobileTopNav: React.FC = () => {
             )}
           </button>
 
-          {/* User Avatar */}
-          <button
-            onClick={() => navigateView('settings')}
-            className="w-8 h-8 rounded-full bg-surface-card border border-hairline text-body flex items-center justify-center font-semibold text-sm flex-shrink-0 cursor-pointer"
-          >
-            {settings.name.trim().slice(0, 1).toUpperCase() || 'U'}
-          </button>
+          {/* User Avatar with account menu */}
+          <div className="relative">
+            <button
+              onClick={() => setProfileMenuOpen((o) => !o)}
+              aria-label="Account menu"
+              aria-expanded={profileMenuOpen}
+              className="w-8 h-8 rounded-full bg-surface-card border border-hairline text-body flex items-center justify-center font-semibold text-sm flex-shrink-0 cursor-pointer"
+            >
+              {initials}
+            </button>
+
+            {profileMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setProfileMenuOpen(false)} />
+                <div className="absolute right-0 mt-2 w-56 bg-surface-soft border border-hairline rounded-xl shadow-lg p-2 z-50">
+                  <div className="p-2 border-b border-hairline-soft">
+                    <p className="font-semibold text-sm text-ink">{settings.name || 'User'}</p>
+                    <p className="text-xs text-muted-soft truncate">{settings.email || 'Local account'}</p>
+                  </div>
+                  <div className="py-1 space-y-1 text-xs">
+                    <button
+                      onClick={() => {
+                        navigateView('settings');
+                        setProfileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded hover:bg-surface-card text-ink font-medium flex items-center space-x-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">person</span>
+                      <span>Profile Settings</span>
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      disabled={loggingOut}
+                      className="w-full text-left px-2 py-1.5 rounded hover:bg-surface-card text-error font-medium flex items-center space-x-2 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">logout</span>
+                      <span>{loggingOut ? 'Signing out…' : 'Sign out'}</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
