@@ -6,6 +6,7 @@ import { MobileTopNav } from './components/MobileTopNav';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { QuickAddModal } from './components/QuickAddModal';
 import { LoginView } from './components/LoginView';
+import { PrivacyUnlockModal } from './components/PrivacyUnlockModal';
 import { DashboardView } from './components/views/DashboardView';
 import { TransactionsView } from './components/views/TransactionsView';
 import { CategoriesView } from './components/views/CategoriesView';
@@ -36,10 +37,10 @@ const BootError: React.FC<{ message: string; onRetry: () => void }> = ({ message
 );
 
 const MainLayout: React.FC = () => {
-  const { currentView, authStatus, bootError, retry } = useBudget();
+  const { currentView, authStatus, bootError, retry, locked } = useBudget();
 
   if (authStatus === 'checking') return <BootLoading />;
-  if (authStatus === 'anonymous') return <LoginView />;
+  if (authStatus === 'anonymous' || locked) return <LoginView />;
   if (bootError) return <BootError message={bootError} onRetry={retry} />;
 
   return (
@@ -58,6 +59,7 @@ const MainLayout: React.FC = () => {
         <MobileBottomNav />
       </div>
       <QuickAddModal />
+      <PrivacyUnlockModal />
     </div>
   );
 };

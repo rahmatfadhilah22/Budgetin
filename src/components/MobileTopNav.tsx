@@ -1,16 +1,8 @@
 import React from 'react';
 import { useBudget } from '../context/BudgetContext';
-import { ViewType } from '../types';
 
 export const MobileTopNav: React.FC = () => {
-  const { currentView, navigateView, privacyMode, setPrivacyMode, draftCount, settings } = useBudget();
-
-  const tabs: { id: ViewType; label: string; badge?: number }[] = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'transactions', label: 'Transactions', badge: draftCount },
-    { id: 'categories', label: 'Categories' },
-    { id: 'recurring', label: 'Recurring' },
-  ];
+  const { navigateView, privacyMode, setPrivacyMode, setPrivacyPromptOpen, draftCount, settings } = useBudget();
 
   return (
     <header className="md:hidden bg-canvas w-full top-0 sticky border-b border-hairline z-40">
@@ -21,7 +13,7 @@ export const MobileTopNav: React.FC = () => {
           {/* Privacy Toggle */}
           <button
             aria-label="Privacy Toggle"
-            onClick={() => setPrivacyMode((prev) => !prev)}
+            onClick={() => (privacyMode ? setPrivacyPromptOpen(true) : setPrivacyMode(true))}
             className="text-muted hover:text-ink transition-colors cursor-pointer p-1 active:opacity-70"
           >
             <span
@@ -55,32 +47,6 @@ export const MobileTopNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Horizontal Nav Tabs */}
-      <nav className="flex space-x-6 px-4 overflow-x-auto no-scrollbar border-t border-hairline-soft">
-        {tabs.map((tab) => {
-          const isActive = currentView === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => navigateView(tab.id)}
-              className={`py-2 whitespace-nowrap text-sm font-semibold transition-colors duration-150 cursor-pointer relative ${
-                isActive
-                  ? 'text-ink border-b-2 border-primary font-bold'
-                  : 'text-muted hover:text-ink font-medium'
-              }`}
-            >
-              <span className="flex items-center space-x-1.5">
-                <span>{tab.label}</span>
-                {tab.badge && tab.badge > 0 ? (
-                  <span className="text-[10px] px-1.5 py-0.2 bg-warning/15 text-accent-amber border border-warning/40 rounded-full font-bold">
-                    {tab.badge}
-                  </span>
-                ) : null}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
     </header>
   );
 };

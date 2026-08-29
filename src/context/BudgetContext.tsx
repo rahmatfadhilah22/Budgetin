@@ -35,6 +35,9 @@ interface BudgetContextType {
   setQuickAddOpen: (open: boolean) => void;
   privacyMode: boolean;
   setPrivacyMode: React.Dispatch<React.SetStateAction<boolean>>;
+  privacyPromptOpen: boolean;
+  setPrivacyPromptOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  locked: boolean;
 
   // Data
   categories: Category[];
@@ -127,7 +130,9 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [privacyMode, setPrivacyMode] = useState(false);
+  const [privacyMode, setPrivacyMode] = useState(true);
+  const [privacyPromptOpen, setPrivacyPromptOpen] = useState(false);
+  const [locked, setLocked] = useState(true);
 
   const loadData = useCallback(async () => {
     const snapshot = await api<BudgetSnapshot>('/api/data');
@@ -170,6 +175,7 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
     await loadData();
     setAuthStatus('authenticated');
+    setLocked(false);
   }, [loadData]);
 
   const logout = useCallback(async () => {
@@ -420,6 +426,9 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setQuickAddOpen,
         privacyMode,
         setPrivacyMode,
+        privacyPromptOpen,
+        setPrivacyPromptOpen,
+        locked,
         categories: data.categories,
         transactions: data.transactions,
         recurring: data.recurring,

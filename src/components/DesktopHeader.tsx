@@ -12,6 +12,7 @@ export const DesktopHeader: React.FC = () => {
     cycleYearLabel,
     privacyMode,
     setPrivacyMode,
+    setPrivacyPromptOpen,
     settings,
     logout,
     draftCount,
@@ -111,7 +112,7 @@ export const DesktopHeader: React.FC = () => {
         {/* Privacy eye toggle */}
         <button
           id="privacy-toggle-btn"
-          onClick={() => setPrivacyMode((prev) => !prev)}
+          onClick={() => (privacyMode ? setPrivacyPromptOpen(true) : setPrivacyMode(true))}
           title={privacyMode ? 'Show Balances' : 'Hide Balances (Privacy Mode)'}
           className="text-muted hover:text-ink p-1.5 rounded-full hover:bg-surface-soft transition-colors cursor-pointer"
         >
