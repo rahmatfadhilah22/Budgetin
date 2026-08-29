@@ -3,6 +3,10 @@ name: Build and push to GHCR
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/**'
   workflow_dispatch:
 
 env:
